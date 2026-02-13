@@ -4,8 +4,7 @@
   "description": "CLI assistant for GLM and MiniMax AI coding platforms",
   "main": "dist/index.js",
   "bin": {
-    "coding-plan-assistant": "dist/cli.js",
-    "cpa": "dist/cli.js"
+    "coding-plan-assistant": "dist/cli.js"
   },
   "homepage": "https://github.com/Kratos/coding-plan-assistant",
   "bugs": {
