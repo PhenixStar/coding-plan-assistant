@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import type { Language } from './types/config.js';
+import type { Language} from './types/config.js';
 import { configManager } from './lib/config.js';
 import { wizard } from './lib/wizard.js';
 import { logger } from './lib/logger.js';
@@ -34,7 +34,7 @@ program
     await wizard.runFirstTimeSetup();
   });
 
-// Lang commands
+// Language commands
 program
   .command('lang')
   .description(i18n.t('commands.lang'))
@@ -43,14 +43,14 @@ program
   });
 
 program
-  .command('lang show')
+  .command('lang-show')
   .description(i18n.t('lang.show_usage'))
   .action(async () => {
     await handleShowLang();
   });
 
 program
-  .command('lang set <lang>')
+  .command('lang-set <lang>')
   .description(i18n.t('lang.set_usage'))
   .action(async (lang) => {
     await handleSetLang([lang]);
@@ -65,14 +65,14 @@ program
   });
 
 program
-  .command('platform show')
+  .command('platform-show')
   .description(i18n.t('platform.show_usage'))
   .action(async () => {
     await handleShowPlatform();
   });
 
 program
-  .command('platform set <platform>')
+  .command('platform-set <platform>')
   .description(i18n.t('platform.set_usage'))
   .action(async (platform) => {
     await handleSetPlatform([platform]);
@@ -80,14 +80,14 @@ program
 
 // Auth commands
 program
-  .command('auth [platform] [token]')
+  .command('auth')
   .description(i18n.t('commands.auth'))
   .action(async (platform, token) => {
     await handleAuth([platform, token]);
   });
 
 program
-  .command('auth reload <tool>')
+  .command('auth-reload <tool>')
   .description(i18n.t('auth.reload_usage'))
   .action(async (tool) => {
     await handleReload([tool]);
@@ -103,8 +103,8 @@ program
 
 // Tool command
 program
-  .command('tool list')
-  .description('List supported tools')
+  .command('tool')
+  .description('Manage supported tools')
   .action(async () => {
     const tools = toolManager.getSupportedTools();
     console.log('\nSupported tools:');
