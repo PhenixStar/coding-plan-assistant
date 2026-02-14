@@ -33,7 +33,7 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version }}"
           if [ -z "$VERSION" ]; then
-            VERSION=$(node -p "console.log(require('./package.json').version)")
+            VERSION="${{ github.event.inputs.version }}"
           fi
           npm version "$VERSION" --no-commit-hooks --allow-same-version
           npm publish --access public
