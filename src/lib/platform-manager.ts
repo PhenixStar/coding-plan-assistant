@@ -21,7 +21,12 @@ const MINIMAX_CONFIG = {
   chinaUrl: 'https://api.minimaxi.com/anthropic',
   globalOpenAiUrl: 'https://api.minimax.io/v1',
   chinaOpenAiUrl: 'https://api.minimaxi.com/v1',
-  models: ['MiniMax-M2.5', 'MiniMax-M2.1'],
+  models: [
+    'MiniMax-M2.5',
+    'MiniMax-M2.5-highspeed',
+    'MiniMax-M2.1',
+    'MiniMax-M2.1-highspeed'
+  ],
   defaultModel: 'MiniMax-M2.5',
   apiDocsUrl: 'https://platform.minimax.io/docs/coding-plan/'
 };
@@ -44,8 +49,16 @@ class GLMPlatform implements Platform {
       if (!key || key.length < 10) {
         return false;
       }
-      // TODO: Add actual API validation call
-      return true;
+      // Actual API validation call to /models endpoint
+      const response = await fetch(`${this.globalUrl}models`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+      return response.ok;
     } catch {
       return false;
     }
@@ -87,8 +100,16 @@ class MiniMaxPlatform implements Platform {
       if (!key || key.length < 10) {
         return false;
       }
-      // TODO: Add actual API validation call
-      return true;
+      // Actual API validation call to /models endpoint
+      const response = await fetch(`${this.globalUrl}models`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+      return response.ok;
     } catch {
       return false;
     }

@@ -1,14 +1,14 @@
 {
   "name": "coding-plan-assistant",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CLI assistant for GLM and MiniMax AI coding platforms",
   "main": "dist/index.js",
   "bin": {
     "coding-plan-assistant": "dist/cli.js"
   },
-  "homepage": "https://github.com/Kratos/coding-plan-assistant",
+  "homepage": "https://github.com/PhenixStar/coding-plan-assistant",
   "bugs": {
-    "url": "https://github.com/Kratos/coding-plan-assistant/issues"
+    "url": "https://github.com/PhenixStar/coding-plan-assistant/issues"
   },
   "type": "module",
   "files": [

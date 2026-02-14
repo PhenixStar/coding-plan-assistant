@@ -33,8 +33,25 @@ const GLM_MCP_SERVICES: McpService[] = [
   }
 ];
 
-// MCP services for MiniMax (can be added later)
-const MINIMAX_MCP_SERVICES: McpService[] = [];
+// MCP services for MiniMax
+const MINIMAX_MCP_SERVICES: McpService[] = [
+  {
+    id: 'minimax-usage-query',
+    name: 'MiniMax Usage Query',
+    description: 'Query MiniMax coding plan usage statistics',
+    category: 'minimax',
+    platform: 'minimax',
+    path: path.join(os.homedir(), '.claude', 'skills', 'minimax-plan-usage')
+  },
+  {
+    id: 'minimax-case-feedback',
+    name: 'MiniMax Case Feedback',
+    description: 'Submit feedback for MiniMax coding plan issues',
+    category: 'minimax',
+    platform: 'minimax',
+    path: path.join(os.homedir(), '.claude', 'skills', 'minimax-plan-feedback')
+  }
+];
 
 // Common MCP services (platform-agnostic)
 const COMMON_MCP_SERVICES: McpService[] = [
