@@ -19,7 +19,7 @@ const packageJson = JSON.parse(
   readFileSync(path.join(__dirname, '../package.json'), 'utf-8')
 );
 
-const program = new Command('cpa')
+const program = new Command('uchelper')
   .version(packageJson.version)
   .description(packageJson.description);
 
@@ -35,59 +35,62 @@ program
   });
 
 // Language commands
-program
+const langCommand = program
   .command('lang')
   .description(i18n.t('commands.lang'))
   .action(async () => {
     await handleLangMenu();
   });
 
-program
-  .command('lang-show')
+langCommand
+  .command('show')
   .description(i18n.t('lang.show_usage'))
   .action(async () => {
     await handleShowLang();
   });
 
-program
-  .command('lang-set <lang>')
+langCommand
+  .command('set <lang>')
   .description(i18n.t('lang.set_usage'))
   .action(async (lang) => {
     await handleSetLang([lang]);
   });
 
 // Platform commands
-program
+const platformCommand = program
   .command('platform')
   .description(i18n.t('commands.platform'))
   .action(async () => {
     await handlePlatformMenu();
   });
 
-program
-  .command('platform-show')
+platformCommand
+  .command('show')
   .description(i18n.t('platform.show_usage'))
   .action(async () => {
     await handleShowPlatform();
   });
 
-program
-  .command('platform-set <platform>')
+platformCommand
+  .command('set <platform>')
   .description(i18n.t('platform.set_usage'))
   .action(async (platform) => {
     await handleSetPlatform([platform]);
   });
 
 // Auth commands
-program
+const authCommand = program
   .command('auth')
   .description(i18n.t('commands.auth'))
+  .argument('[platform]')
+  .argument('[token]')
   .action(async (platform, token) => {
-    await handleAuth([platform, token]);
+    const args = [platform, token].filter((arg): arg is string => Boolean(arg));
+    await handleAuth(args);
   });
 
-program
-  .command('auth-reload <tool>')
+authCommand
+  .command('reload <tool>')
   .description(i18n.t('auth.reload_usage'))
   .action(async (tool) => {
     await handleReload([tool]);
