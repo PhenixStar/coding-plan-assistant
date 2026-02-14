@@ -74,6 +74,15 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
   }
 };
 
+const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
+const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
+
+interface ToolBackups {
+  claudeCode?: {
+    env?: Record<string, string>;
+  };
+}
+
 class ToolManager {
   private static instance: ToolManager;
 
@@ -169,6 +178,58 @@ class ToolManager {
     }
   }
 
+  private readBackups(): ToolBackups {
+    try {
+      if (!fs.existsSync(TOOL_BACKUP_FILE)) {
+        return {};
+      }
+      const content = fs.readFileSync(TOOL_BACKUP_FILE, 'utf-8');
+      return JSON.parse(content) as ToolBackups;
+    } catch {
+      return {};
+    }
+  }
+
+  private writeBackups(backups: ToolBackups): void {
+    if (!fs.existsSync(CPA_STATE_DIR)) {
+      fs.mkdirSync(CPA_STATE_DIR, { recursive: true });
+    }
+    fs.writeFileSync(TOOL_BACKUP_FILE, JSON.stringify(backups, null, 2));
+  }
+
+  private backupClaudeCodeEnvIfNeeded(): void {
+    const backups = this.readBackups();
+    if (backups.claudeCode?.env !== undefined) {
+      return;
+    }
+
+    const current = this.getToolConfig('claude-code') || {};
+    const currentEnv = current?.env;
+
+    backups.claudeCode = {
+      env: currentEnv && typeof currentEnv === 'object' ? { ...currentEnv } : {}
+    };
+    this.writeBackups(backups);
+  }
+
+  private restoreClaudeCodeEnvFromBackup(): boolean {
+    const backups = this.readBackups();
+    const backupEnv = backups.claudeCode?.env;
+
+    if (backupEnv === undefined) {
+      return this.updateToolConfig('claude-code', { env: {} });
+    }
+
+    const restored = this.updateToolConfig('claude-code', { env: backupEnv });
+    if (!restored) {
+      return false;
+    }
+
+    delete backups.claudeCode;
+    this.writeBackups(backups);
+    return true;
+  }
+
   loadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
     const tool = SUPPORTED_TOOLS[toolId];
     if (!tool) {
@@ -193,6 +254,7 @@ class ToolManager {
 
     switch (toolId) {
       case 'claude-code':
+        this.backupClaudeCodeEnvIfNeeded();
         return this.updateToolConfig(toolId, { env: toolConfig.env });
       case 'factory-droid':
         return this.updateFactoryDroidConfig(toolConfig);
@@ -254,8 +316,7 @@ class ToolManager {
 
     switch (toolId) {
       case 'claude-code':
-        // Remove env vars
-        return this.updateToolConfig(toolId, { env: {} });
+        return this.restoreClaudeCodeEnvFromBackup();
       case 'factory-droid':
         return this.removeFactoryDroidModel(toolConfig?.model || '');
       default:

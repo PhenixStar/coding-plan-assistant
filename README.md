@@ -146,6 +146,9 @@ active_platform: glm  # or minimax
 
 ### Claude Code (`~/.claude/settings.json`)
 
+> When you load GLM/MiniMax into Claude Code, the assistant replaces Claude env auth/base-url settings for that tool.  
+> When you unload, it restores the previous Claude env (including prior API/OAuth-related values) from a local backup.
+
 **GLM Configuration:**
 ```json
 {
