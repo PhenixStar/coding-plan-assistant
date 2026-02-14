@@ -176,6 +176,24 @@ class ToolManager {
     }
   }
 
+  private replaceToolConfig(toolId: string, config: any): boolean {
+    const tool = SUPPORTED_TOOLS[toolId];
+    if (!tool || !tool.configPath) return false;
+
+    try {
+      const configDir = path.dirname(tool.configPath);
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+
+      fs.writeFileSync(tool.configPath, JSON.stringify(config, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to replace config for ${tool.name}: ${error}`);
+      return false;
+    }
+  }
+
   private readBackups(): ToolBackups {
     try {
       if (!fs.existsSync(TOOL_BACKUP_FILE)) {
@@ -213,10 +231,10 @@ class ToolManager {
     const backupConfig = backups.toolConfigs?.[toolId];
 
     if (backupConfig === undefined) {
-      return this.updateToolConfig(toolId, {});
+      return this.replaceToolConfig(toolId, {});
     }
 
-    const restored = this.updateToolConfig(toolId, backupConfig);
+    const restored = this.replaceToolConfig(toolId, backupConfig);
     if (!restored) {
       return false;
     }
