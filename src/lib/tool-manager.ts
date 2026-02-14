@@ -77,6 +77,10 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
 const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
 const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
 
+interface LegacyClaudeBackup {
+  env?: Record<string, string>;
+}
+
 interface ToolBackups {
   toolConfigs?: Record<string, any>;
 }
@@ -207,10 +211,6 @@ class ToolManager {
     backups.toolConfigs[toolId] = current;
     this.writeBackups(backups);
   }
-
-  private restoreToolConfigFromBackup(toolId: string): boolean {
-    const backups = this.readBackups();
-    const backupConfig = backups.toolConfigs?.[toolId];
 
     if (backupConfig === undefined) {
       return this.updateToolConfig(toolId, {});
