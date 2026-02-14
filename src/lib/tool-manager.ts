@@ -83,7 +83,6 @@ interface LegacyClaudeBackup {
 
 interface ToolBackups {
   toolConfigs?: Record<string, any>;
-  claudeCode?: LegacyClaudeBackup;
 }
 
 class ToolManager {
@@ -212,27 +211,6 @@ class ToolManager {
     backups.toolConfigs[toolId] = current;
     this.writeBackups(backups);
   }
-
-  private getBackupConfigForTool(backups: ToolBackups, toolId: string): any | undefined {
-    const directBackup = backups.toolConfigs?.[toolId];
-    if (directBackup !== undefined) {
-      return directBackup;
-    }
-
-    if (toolId === 'claude-code' && backups.claudeCode?.env !== undefined) {
-      backups.toolConfigs = backups.toolConfigs || {};
-      backups.toolConfigs[toolId] = { env: backups.claudeCode.env };
-      delete backups.claudeCode;
-      this.writeBackups(backups);
-      return backups.toolConfigs[toolId];
-    }
-
-    return undefined;
-  }
-
-  private restoreToolConfigFromBackup(toolId: string): boolean {
-    const backups = this.readBackups();
-    const backupConfig = this.getBackupConfigForTool(backups, toolId);
 
     if (backupConfig === undefined) {
       return this.updateToolConfig(toolId, {});

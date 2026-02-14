@@ -18,7 +18,7 @@ const packageJson = JSON.parse(
   readFileSync(path.join(__dirname, '../package.json'), 'utf-8')
 );
 
-const program = new Command('cpa')
+const program = new Command('uchelper')
   .version(packageJson.version)
   .description(packageJson.description);
 
