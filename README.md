@@ -92,6 +92,8 @@ uchelper auth reload <tool>        # Reload config to tool
 
 # Tool management
 uchelper tool list               # List supported tools
+uchelper tool load <tool> [platform]   # Load config into tool
+uchelper tool unload <tool> [platform] # Unload config from tool
 
 # Health check
 uchelper doctor                 # Run health check
@@ -136,7 +138,7 @@ active_platform: glm  # or minimax
 
 ### MiniMax
 
-**API Documentation:** https://platform.minimax.io/docs
+**API Documentation:** https://platform.minimax.io/docs/coding-plan/
 
 **Global URL:** `https://api.minimax.io/anthropic`
 **China URL:** `https://api.minimaxi.com/anthropic`
@@ -172,7 +174,12 @@ active_platform: glm  # or minimax
     "ANTHROPIC_MODEL": "MiniMax-M2.5",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M2.5",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "MiniMax-M2.5",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2.5"
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2.5",
+    "OPENAI_BASE_URL": "https://api.minimax.io/v1",
+    "OPENAI_API_KEY": "<MINIMAX_API_KEY>",
+    "OPENAI_MODEL": "MiniMax-M2.5",
+    "MINIMAX_API_KEY": "<MINIMAX_API_KEY>",
+    "MINIMAX_BASE_URL": "https://api.minimax.io/anthropic"
   }
 }
 ```
