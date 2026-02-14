@@ -3,19 +3,17 @@ name: Publish to npm
 on:
   workflow_dispatch:
     inputs:
-      otp:
-        description: "Optional npm OTP code (only if account requires 2FA for publish)"
+      version:
+        description: 'Version to publish (default: latest from package.json)'
         required: false
         type: string
-  release:
-    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,7 +22,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
@@ -32,14 +29,13 @@ jobs:
       - name: Build package
         run: npm run build
 
-      - name: Publish to npm (with OTP)
-        if: ${{ github.event.inputs.otp != '' }}
-        run: npm publish --access public --otp "${{ github.event.inputs.otp }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to npm (without OTP)
-        if: ${{ github.event.inputs.otp == '' }}
-        run: npm publish --access public
+      - name: Publish to npm
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(node -p "console.log(require('./package.json').version)")
+          fi
+          npm version "$VERSION" --no-commit-hooks --allow-same-version
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
