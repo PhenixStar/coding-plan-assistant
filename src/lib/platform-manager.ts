@@ -19,9 +19,11 @@ const MINIMAX_CONFIG = {
   name: 'MiniMax',
   globalUrl: 'https://api.minimax.io/anthropic',
   chinaUrl: 'https://api.minimaxi.com/anthropic',
+  globalOpenAiUrl: 'https://api.minimax.io/v1',
+  chinaOpenAiUrl: 'https://api.minimaxi.com/v1',
   models: ['MiniMax-M2.5', 'MiniMax-M2.1'],
   defaultModel: 'MiniMax-M2.5',
-  apiDocsUrl: 'https://platform.minimax.io/docs'
+  apiDocsUrl: 'https://platform.minimax.io/docs/coding-plan/'
 };
 
 class GLMPlatform implements Platform {
@@ -94,6 +96,8 @@ class MiniMaxPlatform implements Platform {
 
   getToolConfig(plan: PlanType, apiKey: string, endpoint: string): ToolConfig {
     const baseUrl = endpoint || (plan === 'china' ? this.chinaUrl : this.globalUrl);
+    const openAiBaseUrl = plan === 'china' ? MINIMAX_CONFIG.chinaOpenAiUrl : MINIMAX_CONFIG.globalOpenAiUrl;
+
     return {
       baseUrl,
       apiKey,
@@ -104,7 +108,12 @@ class MiniMaxPlatform implements Platform {
         ANTHROPIC_MODEL: this.defaultModel,
         ANTHROPIC_DEFAULT_SONNET_MODEL: this.defaultModel,
         ANTHROPIC_DEFAULT_OPUS_MODEL: this.defaultModel,
-        ANTHROPIC_DEFAULT_HAIKU_MODEL: this.defaultModel
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: this.defaultModel,
+        OPENAI_BASE_URL: openAiBaseUrl,
+        OPENAI_API_KEY: apiKey,
+        OPENAI_MODEL: this.defaultModel,
+        MINIMAX_API_KEY: apiKey,
+        MINIMAX_BASE_URL: baseUrl
       }
     };
   }

@@ -9,8 +9,7 @@ import { wizard } from './lib/wizard.js';
 import { logger } from './lib/logger.js';
 import { i18n } from './lib/i18n.js';
 import { doctor } from './commands/doctor.js';
-import { handleAuth, handleReload, handleLangMenu, handleShowLang, handleSetLang, handlePlatformMenu, handleShowPlatform, handleSetPlatform } from './commands/index.js';
-import { toolManager } from './lib/tool-manager.js';
+import { handleAuth, handleReload, handleLangMenu, handleShowLang, handleSetLang, handlePlatformMenu, handleShowPlatform, handleSetPlatform, handleToolList, handleToolLoad, handleToolUnload } from './commands/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -105,16 +104,34 @@ program
   });
 
 // Tool command
-program
+const toolCommand = program
   .command('tool')
   .description('Manage supported tools')
   .action(async () => {
-    const tools = toolManager.getSupportedTools();
-    console.log('\nSupported tools:');
-    for (const tool of tools) {
-      const installed = toolManager.isToolInstalled(tool.id) ? '✓' : '✗';
-      console.log(`  ${installed} ${tool.displayName}`);
-    }
+    await handleToolList();
+  });
+
+toolCommand
+  .command('list')
+  .description('List supported tools and load/unload capability')
+  .action(async () => {
+    await handleToolList();
+  });
+
+toolCommand
+  .command('load <tool> [platform]')
+  .description('Load platform config into a supported tool')
+  .action(async (tool, platform) => {
+    const args = [tool, platform].filter((arg): arg is string => Boolean(arg));
+    await handleToolLoad(args);
+  });
+
+toolCommand
+  .command('unload <tool> [platform]')
+  .description('Unload platform config from a supported tool')
+  .action(async (tool, platform) => {
+    const args = [tool, platform].filter((arg): arg is string => Boolean(arg));
+    await handleToolUnload(args);
   });
 
 // Parse and execute
