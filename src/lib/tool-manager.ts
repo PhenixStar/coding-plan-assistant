@@ -230,6 +230,10 @@ class ToolManager {
     this.writeBackups(backups);
   }
 
+  private restoreToolConfigFromBackup(toolId: string): boolean {
+    const backups = this.readBackups();
+    const backupConfig = backups.toolConfigs && backups.toolConfigs[toolId];
+
     if (backupConfig === undefined) {
       return this.replaceToolConfig(toolId, {});
     }
