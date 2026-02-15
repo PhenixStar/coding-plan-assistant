@@ -125,6 +125,15 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
     configPath: '', // VS Code workspace settings.json
     displayName: 'Continue (VS Code)',
     supported: true
+  },
+  'bolt-new': {
+    id: 'bolt-new',
+    name: 'Bolt.new',
+    command: 'echo "Bolt.new is browser-based"',
+    installCommand: 'echo "Open https://bolt.new in your browser"',
+    configPath: '',
+    displayName: 'Bolt.new',
+    supported: true
   }
 };
 
