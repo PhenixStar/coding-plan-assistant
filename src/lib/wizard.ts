@@ -186,9 +186,13 @@ class Wizard {
       }
     ]);
 
-    // Store API key with optional password for encryption
-    configManager.setApiKey(platform, apiKey.trim(), password || undefined);
-    logger.success(i18n.t('auth.saved', { platform }));
+    // Store API key only if password is provided (required for encryption)
+    if (password) {
+      configManager.setApiKey(platform, apiKey.trim(), password);
+      logger.success(i18n.t('auth.saved', { platform }));
+    } else {
+      logger.warning(i18n.t('auth.password_required_for_encryption'));
+    }
     return apiKey.trim();
   }
 

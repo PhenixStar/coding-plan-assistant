@@ -133,7 +133,7 @@ class ConfigManager {
 
   getApiKey(platform?: PlatformId, password?: string): string | undefined {
     const plat = platform || this.config.active_platform;
-    // If password provided, try to decrypt encrypted API key first
+    // Only return encrypted API key when password is provided
     if (password) {
       const encryptedKey = this.config[plat]?.encrypted_api_key;
       if (encryptedKey) {
@@ -144,22 +144,17 @@ class ConfigManager {
         }
       }
     }
-    // Fall back to plain text API key
-    return this.config[plat]?.api_key;
+    // No fallback to plaintext - return undefined if no encrypted key available
+    return undefined;
   }
 
-  setApiKey(platform: PlatformId, apiKey: string, password?: string): void {
+  setApiKey(platform: PlatformId, apiKey: string, password: string): void {
     if (!this.config[platform]) {
       this.config[platform] = {};
     }
-    if (password) {
-      // Encrypt and store the API key
-      const encryptedKey = encrypt(apiKey, password);
-      (this.config[platform] as PlatformConfig).encrypted_api_key = encryptedKey;
-    } else {
-      // Store in plain text for backward compatibility
-      (this.config[platform] as PlatformConfig).api_key = apiKey;
-    }
+    // Always encrypt and store the API key
+    const encryptedKey = encrypt(apiKey, password);
+    (this.config[platform] as PlatformConfig).encrypted_api_key = encryptedKey;
     this.saveConfig();
   }
 
