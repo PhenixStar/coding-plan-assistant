@@ -25,7 +25,7 @@ export interface UnifiedConfig {
   glm: PlatformConfig;
   minimax: PlatformConfig;
   active_platform: PlatformId;
-  master_password_hash?: string;
+  credentialStorage?: CredentialStorageConfig;
 }
 
 export interface ToolConfig {

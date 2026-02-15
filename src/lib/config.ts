@@ -2,7 +2,7 @@ import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import yaml from 'js-yaml';
-import type { UnifiedConfig, PlatformId, PlanType, Language, PlatformConfig } from '../types/config.js';
+import type { UnifiedConfig, PlatformId, PlanType, Language, PlatformConfig, CredentialStorageConfig, CredentialStorageType } from '../types/config.js';
 import { logger } from './logger.js';
 import { encrypt, decrypt } from './crypto.js';
 
@@ -216,67 +216,53 @@ class ConfigManager {
     this.saveConfig();
   }
 
-  // Encrypted API key storage methods
-  setEncryptedApiKey(platform: PlatformId, apiKey: string, password: string): void {
-    if (!this.config[platform]) {
-      this.config[platform] = {};
-    }
-    const encryptedKey = encrypt(apiKey, password);
-    (this.config[platform] as PlatformConfig).encrypted_api_key = encryptedKey;
+  // Credential storage getters/setters
+  getCredentialStorage(): CredentialStorageConfig | undefined {
+    return this.config.credentialStorage;
+  }
+
+  setCredentialStorage(config: CredentialStorageConfig): void {
+    this.config.credentialStorage = config;
     this.saveConfig();
   }
 
-  getDecryptedApiKey(platform: PlatformId, password: string): string | undefined {
-    const plat = platform || this.config.active_platform;
-    const encryptedKey = this.config[plat]?.encrypted_api_key;
-    if (!encryptedKey) {
-      return undefined;
-    }
-    try {
-      return decrypt(encryptedKey, password);
-    } catch (error) {
-      logger.warning(`Failed to decrypt API key: ${error}`);
-      return undefined;
-    }
+  getCredentialStorageType(): CredentialStorageType | undefined {
+    return this.config.credentialStorage?.type;
   }
 
-  revokeEncryptedApiKey(platform: PlatformId): void {
-    if (this.config[platform]) {
-      delete (this.config[platform] as PlatformConfig).encrypted_api_key;
-      this.saveConfig();
+  setCredentialStorageType(type: CredentialStorageType): void {
+    if (!this.config.credentialStorage) {
+      this.config.credentialStorage = { type };
+    } else {
+      this.config.credentialStorage.type = type;
     }
-  }
-
-  // Master password methods
-  hasMasterPassword(): boolean {
-    return !!this.config.master_password_hash;
-  }
-
-  setMasterPassword(password: string): void {
-    // Store a hash of the password for verification
-    const hash = encrypt('master_password_verifier', password);
-    this.config.master_password_hash = hash;
     this.saveConfig();
   }
 
-  verifyMasterPassword(password: string): boolean {
-    if (!this.config.master_password_hash) {
-      return false;
-    }
-    try {
-      const verifier = decrypt(this.config.master_password_hash, password);
-      return verifier === 'master_password_verifier';
-    } catch {
-      return false;
-    }
+  getCredentialStorageEnvPrefix(): string | undefined {
+    return this.config.credentialStorage?.envPrefix;
   }
 
-  getMasterPasswordHash(): string | undefined {
-    return this.config.master_password_hash;
+  setCredentialStorageEnvPrefix(prefix: string): void {
+    if (!this.config.credentialStorage) {
+      this.config.credentialStorage = { type: 'env', envPrefix: prefix };
+    } else {
+      this.config.credentialStorage.envPrefix = prefix;
+    }
+    this.saveConfig();
   }
 
-  clearMasterPassword(): void {
-    delete this.config.master_password_hash;
+  getCredentialStorageExternalProvider(): string | undefined {
+    return this.config.credentialStorage?.externalProvider;
+  }
+
+  setCredentialStorageExternalProvider(provider: string): void {
+    if (!this.config.credentialStorage) {
+      this.config.credentialStorage = { type: 'external', externalProvider: provider };
+    } else {
+      this.config.credentialStorage.type = 'external';
+      this.config.credentialStorage.externalProvider = provider;
+    }
     this.saveConfig();
   }
 }
