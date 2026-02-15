@@ -2,9 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import type { ToolInfo, PlatformId } from '../types/tools.js';
-import type { ToolConfig, PlanType } from '../types/platform.js';
-import { configManager } from './config.js';
-import { platformManager } from './platform-manager.js';
+import type { ToolConfig } from '../types/platform.js';
+import { toolPlatformConfig } from './tool-platform-config.js';
 import { toolRegistry } from './tool-registry.js';
 import { toolInstaller } from './tool-installer.js';
 import { toolConfigManager } from './tool-config-manager.js';
@@ -81,16 +80,7 @@ class ToolManager {
       return false;
     }
 
-    const apiKey = configManager.getApiKey(platformId);
-    const plan = configManager.getPlan();
-    const endpoint = configManager.getEndpoint(platformId);
-
-    if (!apiKey) {
-      logger.error(`API key not set for ${platformId}`);
-      return false;
-    }
-
-    const toolConfig = platformManager.getToolConfig(platformId, plan, apiKey, endpoint || '');
+    const toolConfig = toolPlatformConfig.getToolConfig(platformId);
     if (!toolConfig) {
       logger.error(`Failed to get tool config for ${platformId}`);
       return false;
@@ -371,8 +361,8 @@ class ToolManager {
     const tool = toolRegistry.getTool(toolId);
     if (!tool) return false;
 
-    const toolConfig = platformManager.getToolConfig(platformId, 'global', '', '');
-    if (!toolConfig) return false;
+    // Get default model for factory-droid cleanup
+    const defaultModel = toolPlatformConfig.getDefaultModel(platformId);
 
     switch (toolId) {
       case 'claude-code':
@@ -380,7 +370,7 @@ class ToolManager {
       case 'opencode':
         return this.restoreToolConfigFromBackup(toolId);
       case 'factory-droid':
-        return this.removeFactoryDroidModel(toolConfig?.model || '');
+        return this.removeFactoryDroidModel(defaultModel || '');
       case 'aider':
         return this.removeAiderConfig();
       case 'copilot':
