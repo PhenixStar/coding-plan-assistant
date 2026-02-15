@@ -8,6 +8,7 @@ import { platformManager } from './platform-manager.js';
 import { toolRegistry } from './tool-registry.js';
 import { toolInstaller } from './tool-installer.js';
 import { toolConfigManager } from './tool-config-manager.js';
+import { toolBackupManager } from './tool-backup-manager.js';
 import { logger } from './logger.js';
 
 class ToolManager {
@@ -63,14 +64,14 @@ class ToolManager {
     const tool = toolRegistry.getTool(toolId);
     if (!tool || !tool.configPath) return;
 
-    toolConfigManager.backupToolConfig(toolId, tool.configPath);
+    toolBackupManager.backupToolConfig(toolId, tool.configPath);
   }
 
   private restoreToolConfigFromBackup(toolId: string): boolean {
     const tool = toolRegistry.getTool(toolId);
     if (!tool || !tool.configPath) return false;
 
-    return toolConfigManager.restoreToolConfig(toolId, tool.configPath);
+    return toolBackupManager.restoreToolConfig(toolId, tool.configPath);
   }
 
   loadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
