@@ -3,9 +3,9 @@
   "spec": "005-api-keys-exposed-in-tool-configuration-files",
   "state": "building",
   "subtasks": {
-    "completed": 11,
+    "completed": 13,
     "total": 13,
-    "in_progress": 1,
+    "in_progress": 0,
     "failed": 0
   },
   "phase": {
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 12,
+    "number": 13,
     "started_at": "2026-02-16T04:52:24.256633"
   },
-  "last_update": "2026-02-16T05:52:09.240163"
+  "last_update": "2026-02-16T06:20:00.000000"
 }
