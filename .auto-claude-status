@@ -3,23 +3,23 @@
   "spec": "001-extended-ai-coding-tool-support",
   "state": "building",
   "subtasks": {
-    "completed": 11,
+    "completed": 12,
     "total": 15,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Implement Configuration Templates",
+    "current": "Update Tests",
     "id": null,
-    "total": 2
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 13,
+    "number": 14,
     "started_at": "2026-02-16T01:09:46.162976"
   },
-  "last_update": "2026-02-16T01:54:16.778478"
+  "last_update": "2026-02-16T01:58:13.488782"
 }
