@@ -71,6 +71,15 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
     configPath: path.join(os.homedir(), '.factory', 'config.json'),
     displayName: 'Factory Droid',
     supported: true
+  },
+  'windsurf': {
+    id: 'windsurf',
+    name: 'Windsurf',
+    command: 'windsurf --version',
+    installCommand: 'echo "Install from https://windsurf.com"',
+    configPath: path.join(os.homedir(), '.windsurf', 'config.json'),
+    displayName: 'Windsurf',
+    supported: true
   }
 };
 
