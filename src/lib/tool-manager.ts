@@ -116,6 +116,15 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
     configPath: '', // VS Code workspace settings.json
     displayName: 'Codeium (VS Code)',
     supported: true
+  },
+  'continue': {
+    id: 'continue',
+    name: 'Continue',
+    command: 'code --list-extensions | grep -i continue',
+    installCommand: 'code --install-extension continue.continue',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Continue (VS Code)',
+    supported: true
   }
 };
 
