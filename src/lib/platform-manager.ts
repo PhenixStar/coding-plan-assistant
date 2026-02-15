@@ -47,6 +47,7 @@ class GLMPlatform implements Platform {
     try {
       // Basic format validation
       if (!key || key.length < 10) {
+        logger.debug(`API key validation failed for ${this.name}: key too short or empty`);
         return false;
       }
       // Actual API validation call to /models endpoint
@@ -58,8 +59,13 @@ class GLMPlatform implements Platform {
         },
         signal: AbortSignal.timeout(10000) // 10 second timeout
       });
+      if (!response.ok) {
+        logger.debug(`API key validation failed for ${this.name}: HTTP ${response.status} - ${response.statusText}`);
+      }
       return response.ok;
-    } catch {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.debug(`API key validation error for ${this.name}: ${errorMessage}`);
       return false;
     }
   }
@@ -98,6 +104,7 @@ class MiniMaxPlatform implements Platform {
     try {
       // Basic format validation
       if (!key || key.length < 10) {
+        logger.debug(`API key validation failed for ${this.name}: key too short or empty`);
         return false;
       }
       // Actual API validation call to /models endpoint
@@ -109,8 +116,13 @@ class MiniMaxPlatform implements Platform {
         },
         signal: AbortSignal.timeout(10000) // 10 second timeout
       });
+      if (!response.ok) {
+        logger.debug(`API key validation failed for ${this.name}: HTTP ${response.status} - ${response.statusText}`);
+      }
       return response.ok;
-    } catch {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.debug(`API key validation error for ${this.name}: ${errorMessage}`);
       return false;
     }
   }
@@ -171,15 +183,20 @@ class PlatformManager {
   async validateApiKey(platformId: PlatformId, apiKey: string): Promise<boolean> {
     const platform = this.getPlatform(platformId);
     if (!platform) {
-      logger.warning(`Platform not found: ${platformId}`);
+      logger.warning(`Platform not found: ${platformId}. Available platforms: ${this.getPlatformIds().join(', ')}`);
       return false;
     }
-    return await platform.validateApiKey(apiKey);
+    const isValid = await platform.validateApiKey(apiKey);
+    if (!isValid) {
+      logger.debug(`API key validation failed for platform: ${platformId}`);
+    }
+    return isValid;
   }
 
   getToolConfig(platformId: PlatformId, plan: PlanType, apiKey: string, endpoint: string): ToolConfig | undefined {
     const platform = this.getPlatform(platformId);
     if (!platform) {
+      logger.warning(`Cannot get tool config: Platform not found '${platformId}'. Available platforms: ${this.getPlatformIds().join(', ')}`);
       return undefined;
     }
     return platform.getToolConfig(plan, apiKey, endpoint);
