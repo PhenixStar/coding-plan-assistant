@@ -356,6 +356,13 @@ class ToolManager {
         return this.updateAiderConfig(toolConfig);
       case 'copilot':
         return this.updateCopilotConfig(toolConfig);
+      case 'codeium':
+      case 'continue':
+      case 'cline':
+      case 'roo-code':
+      case 'kilo-code':
+        this.backupToolConfigIfNeeded(toolId);
+        return this.updateVSCodeExtensionConfig(toolId, toolConfig);
       default:
         logger.warning(`Load config not implemented for ${tool.name}`);
         return false;
@@ -481,6 +488,133 @@ class ToolManager {
     }
   }
 
+  private updateVSCodeExtensionConfig(toolId: string, toolConfig: ToolConfig): boolean {
+    try {
+      const vscodeSettingsPath = this.getVSCodeSettingsPath();
+      if (!vscodeSettingsPath) {
+        logger.error('Could not find VS Code settings path');
+        return false;
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(vscodeSettingsPath)) {
+        const content = fs.readFileSync(vscodeSettingsPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Extension-specific config keys
+      const extensionConfig = this.getExtensionConfig(toolId, toolConfig);
+
+      // Merge with existing settings
+      const merged = { ...existing, ...extensionConfig };
+      fs.writeFileSync(vscodeSettingsPath, JSON.stringify(merged, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to update VS Code extension config for ${toolId}: ${error}`);
+      return false;
+    }
+  }
+
+  private getVSCodeSettingsPath(): string | null {
+    // Try multiple possible VS Code settings locations
+    const possiblePaths = [
+      path.join(os.homedir(), '.config', 'Code', 'User', 'settings.json'),
+      path.join(os.homedir(), '.config', 'Cursor', 'User', 'settings.json'),
+      path.join(os.homedir(), '.vscode', 'settings.json'),
+      path.join(os.homedir(), 'AppData', 'Roaming', 'Code', 'User', 'settings.json'),
+      path.join(os.homedir(), 'AppData', 'Roaming', 'Cursor', 'User', 'settings.json')
+    ];
+
+    for (const settingsPath of possiblePaths) {
+      if (fs.existsSync(settingsPath)) {
+        return settingsPath;
+      }
+    }
+
+    // Return the most common one as default
+    return possiblePaths[0];
+  }
+
+  private getExtensionConfig(toolId: string, toolConfig: ToolConfig): any {
+    switch (toolId) {
+      case 'codeium':
+        return {
+          'codeium.enable': true,
+          'codeium.anthropicApiKey': toolConfig.apiKey,
+          'codeium.model': toolConfig.model
+        };
+      case 'continue':
+        return {
+          'continue.enable': true,
+          'continue.anthropicApiKey': toolConfig.apiKey,
+          'continue.model': toolConfig.model,
+          'continue.baseUrl': toolConfig.baseUrl || 'https://api.anthropic.com'
+        };
+      case 'cline':
+        return {
+          'cline.enable': true,
+          'cline.anthropicApiKey': toolConfig.apiKey,
+          'cline.model': toolConfig.model,
+          'cline.apiUrl': toolConfig.baseUrl || 'https://api.anthropic.com'
+        };
+      case 'roo-code':
+        return {
+          'rooCode.enable': true,
+          'rooCode.anthropicApiKey': toolConfig.apiKey,
+          'rooCode.model': toolConfig.model
+        };
+      case 'kilo-code':
+        return {
+          'kiloCode.enable': true,
+          'kiloCode.anthropicApiKey': toolConfig.apiKey,
+          'kiloCode.model': toolConfig.model
+        };
+      default:
+        return {};
+    }
+  }
+
+  private removeVSCodeExtensionConfig(toolId: string): boolean {
+    try {
+      const vscodeSettingsPath = this.getVSCodeSettingsPath();
+      if (!vscodeSettingsPath || !fs.existsSync(vscodeSettingsPath)) {
+        return true;
+      }
+
+      const content = fs.readFileSync(vscodeSettingsPath, 'utf-8');
+      const settings: any = JSON.parse(content);
+
+      const keysToRemove = this.getExtensionConfigKeys(toolId);
+
+      for (const key of keysToRemove) {
+        delete settings[key];
+      }
+
+      fs.writeFileSync(vscodeSettingsPath, JSON.stringify(settings, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to remove VS Code extension config for ${toolId}: ${error}`);
+      return false;
+    }
+  }
+
+  private getExtensionConfigKeys(toolId: string): string[] {
+    switch (toolId) {
+      case 'codeium':
+        return ['codeium.enable', 'codeium.anthropicApiKey', 'codeium.model'];
+      case 'continue':
+        return ['continue.enable', 'continue.anthropicApiKey', 'continue.model', 'continue.baseUrl'];
+      case 'cline':
+        return ['cline.enable', 'cline.anthropicApiKey', 'cline.model', 'cline.apiUrl'];
+      case 'roo-code':
+        return ['rooCode.enable', 'rooCode.anthropicApiKey', 'rooCode.model'];
+      case 'kilo-code':
+        return ['kiloCode.enable', 'kiloCode.anthropicApiKey', 'kiloCode.model'];
+      default:
+        return [];
+    }
+  }
+
   unloadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
     const tool = SUPPORTED_TOOLS[toolId];
     if (!tool) return false;
@@ -499,6 +633,12 @@ class ToolManager {
         return this.removeAiderConfig();
       case 'copilot':
         return this.removeCopilotConfig();
+      case 'codeium':
+      case 'continue':
+      case 'cline':
+      case 'roo-code':
+      case 'kilo-code':
+        return this.removeVSCodeExtensionConfig(toolId);
       default:
         return false;
     }
