@@ -4,6 +4,7 @@ import { toolManager } from '../lib/tool-manager.js';
 import { toolRegistry } from '../lib/tool-registry.js';
 import { toolInstaller } from '../lib/tool-installer.js';
 import { logger } from '../lib/logger.js';
+import { i18n } from '../lib/i18n.js';
 
 const LOADABLE_TOOLS = [
   'claude-code',
@@ -26,6 +27,15 @@ function resolvePlatform(platformArg?: string): PlatformId {
 }
 
 export async function handleToolList(): Promise<void> {
+  const tools = toolManager.getSupportedTools();
+  console.log('\n' + i18n.t('tool.list_title') + ':');
+  for (const tool of tools) {
+    const isInstalled = toolManager.isToolInstalled(tool.id);
+    if (isInstalled) {
+      logger.success('✓ ' + tool.displayName);
+    } else {
+      logger.warning('✗ ' + tool.displayName);
+    }
   const tools = toolRegistry.getSupportedTools();
   console.log('\nSupported tools:');
   for (const tool of tools) {
@@ -40,20 +50,20 @@ export async function handleToolLoad(args: string[]): Promise<void> {
   const platform = resolvePlatform(args[1]);
 
   if (!toolId) {
-    logger.error('Usage: cpa tool load <tool> [glm|minimax]');
+    logger.error(i18n.t('tool.load_usage'));
     return;
   }
 
   if (!LOADABLE_TOOLS.includes(toolId)) {
-    logger.error(`Load is not implemented for tool: ${toolId}`);
+    logger.error(i18n.t('tool.load_not_supported', { tool: toolId }));
     return;
   }
 
   const success = toolManager.loadPlatformConfig(toolId, platform);
   if (success) {
-    logger.success(`Loaded ${platform} config into ${toolId}`);
+    logger.success(i18n.t('tool.load_success', { platform, tool: toolId }));
   } else {
-    logger.error(`Failed to load config into ${toolId}`);
+    logger.error(i18n.t('tool.load_failed', { tool: toolId }));
   }
 }
 
@@ -62,19 +72,19 @@ export async function handleToolUnload(args: string[]): Promise<void> {
   const platform = resolvePlatform(args[1]);
 
   if (!toolId) {
-    logger.error('Usage: cpa tool unload <tool> [glm|minimax]');
+    logger.error(i18n.t('tool.unload_usage'));
     return;
   }
 
   if (!LOADABLE_TOOLS.includes(toolId)) {
-    logger.error(`Unload is not implemented for tool: ${toolId}`);
+    logger.error(i18n.t('tool.unload_not_supported', { tool: toolId }));
     return;
   }
 
   const success = toolManager.unloadPlatformConfig(toolId, platform);
   if (success) {
-    logger.success(`Unloaded config from ${toolId}`);
+    logger.success(i18n.t('tool.unload_success', { tool: toolId }));
   } else {
-    logger.error(`Failed to unload config from ${toolId}`);
+    logger.error(i18n.t('tool.unload_failed', { tool: toolId }));
   }
 }

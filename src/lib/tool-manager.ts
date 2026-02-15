@@ -21,10 +21,23 @@ class ToolManager {
     return ToolManager.instance;
   }
 
-  loadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
-    const tool = toolRegistry.getTool(toolId);
-    if (!tool) {
-      logger.error(`Tool not found: ${toolId}`);
+  getTool(toolId: string): ToolInfo | undefined {
+    return SUPPORTED_TOOLS[toolId];
+  }
+
+  getSupportedTools(): ToolInfo[] {
+    return Object.values(SUPPORTED_TOOLS).filter(t => t.supported);
+  }
+
+  isToolInstalled(toolId: string): boolean {
+    const tool = SUPPORTED_TOOLS[toolId];
+    if (!tool) return false;
+
+    try {
+      execSync(tool.command, { stdio: 'ignore' });
+      return true;
+    } catch (error) {
+      logger.debug(`Tool installation check failed for ${toolId}: ${(error as Error).message}`);
       return false;
     }
 
@@ -103,6 +116,9 @@ class ToolManager {
       fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
       return true;
     } catch (error) {
+      const errorMessage = (error as Error).message;
+      logger.error(`Failed to install ${tool.displayName}`);
+      logger.debug(`Tool installation failed for ${toolId}: ${errorMessage}, command: ${tool.installCommand}`);
       logger.error(`Failed to update Factory Droid config: ${error}`);
       return false;
     }
@@ -133,8 +149,9 @@ class ToolManager {
       fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
       return true;
     } catch (error) {
-      logger.error(`Failed to update Aider config: ${error}`);
-      return false;
+      const errorMessage = (error as Error).message;
+      logger.warning(`Failed to read config for ${tool.name}`);
+      logger.debug(`Tool config read failed for ${toolId}, path: ${tool.configPath}, error: ${errorMessage}`);
     }
   }
 
@@ -179,7 +196,9 @@ class ToolManager {
       fs.writeFileSync(envConfigPath, JSON.stringify(envExisting, null, 2));
       return true;
     } catch (error) {
-      logger.error(`Failed to update Copilot config: ${error}`);
+      const errorMessage = (error as Error).message;
+      logger.error(`Failed to update config for ${tool.name}`);
+      logger.debug(`Tool config update failed for ${toolId}, path: ${tool.configPath}, error: ${errorMessage}`);
       return false;
     }
   }
@@ -206,7 +225,9 @@ class ToolManager {
       fs.writeFileSync(vscodeSettingsPath, JSON.stringify(merged, null, 2));
       return true;
     } catch (error) {
-      logger.error(`Failed to update VS Code extension config for ${toolId}: ${error}`);
+      const errorMessage = (error as Error).message;
+      logger.error(`Failed to replace config for ${tool.name}`);
+      logger.debug(`Tool config replace failed for ${toolId}, path: ${tool.configPath}, error: ${errorMessage}`);
       return false;
     }
   }
@@ -225,6 +246,12 @@ class ToolManager {
       if (fs.existsSync(settingsPath)) {
         return settingsPath;
       }
+      const content = fs.readFileSync(TOOL_BACKUP_FILE, 'utf-8');
+      return JSON.parse(content) as ToolBackups;
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      logger.debug(`Failed to read tool backups, path: ${TOOL_BACKUP_FILE}, error: ${errorMessage}`);
+      return {};
     }
 
     // Return the most common one as default
@@ -294,29 +321,31 @@ class ToolManager {
     }
   }
 
-  private getExtensionConfigKeys(toolId: string): string[] {
-    switch (toolId) {
-      case 'codeium':
-        return ['codeium.enable', 'codeium.anthropicApiKey', 'codeium.model'];
-      case 'continue':
-        return ['continue.enable', 'continue.anthropicApiKey', 'continue.model', 'continue.baseUrl'];
-      case 'cline':
-        return ['cline.enable', 'cline.anthropicApiKey', 'cline.model', 'cline.apiUrl'];
-      case 'roo-code':
-        return ['rooCode.enable', 'rooCode.anthropicApiKey', 'rooCode.model'];
-      case 'kilo-code':
-        return ['kiloCode.enable', 'kiloCode.anthropicApiKey', 'kiloCode.model'];
-      default:
-        return [];
+  loadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
+    const tool = SUPPORTED_TOOLS[toolId];
+    if (!tool) {
+      logger.error(`Tool not found: ${toolId}`);
+      logger.debug(`Attempted to load config for unknown tool: ${toolId}, platform: ${platformId}`);
+      return false;
     }
   }
 
-  unloadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
-    const tool = toolRegistry.getTool(toolId);
-    if (!tool) return false;
+    const apiKey = configManager.getApiKey(platformId);
+    const plan = configManager.getPlan();
+    const endpoint = configManager.getEndpoint(platformId);
 
-    // Get default model for factory-droid cleanup
-    const defaultModel = toolPlatformConfig.getDefaultModel(platformId);
+    if (!apiKey) {
+      logger.error(`API key not set for ${platformId}`);
+      logger.debug(`Cannot load tool config: API key missing for platform ${platformId}, tool: ${toolId}`);
+      return false;
+    }
+
+    const toolConfig = platformManager.getToolConfig(platformId, plan, apiKey, endpoint || '');
+    if (!toolConfig) {
+      logger.error(`Failed to get tool config for ${platformId}`);
+      logger.debug(`Tool config retrieval failed for tool: ${toolId}, platform: ${platformId}, plan: ${plan}`);
+      return false;
+    }
 
     switch (toolId) {
       case 'claude-code':
@@ -394,8 +423,32 @@ class ToolManager {
 
       return true;
     } catch (error) {
-      logger.error(`Failed to remove Copilot config: ${error}`);
+      const errorMessage = (error as Error).message;
+      const configPath = path.join(os.homedir(), '.factory', 'config.json');
+      logger.error(`Failed to update Factory Droid config`);
+      logger.debug(`Factory Droid config update failed, path: ${configPath}, model: ${toolConfig.model}, error: ${errorMessage}`);
       return false;
+    }
+  }
+
+  unloadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
+    const tool = SUPPORTED_TOOLS[toolId];
+    if (!tool) return false;
+
+    const toolConfig = platformManager.getToolConfig(platformId, 'global', '', '');
+    if (!toolConfig) return false;
+
+    switch (toolId) {
+      case 'claude-code':
+      case 'cursor':
+      case 'opencode':
+        return this.restoreToolConfigFromBackup(toolId);
+      case 'factory-droid':
+        return this.removeFactoryDroidModel(toolConfig?.model || '');
+      default:
+        logger.warning(`Unload config not implemented for ${tool.name}`);
+        logger.debug(`Unload config not supported for tool: ${toolId}, platform: ${platformId}`);
+        return false;
     }
   }
 
@@ -414,7 +467,9 @@ class ToolManager {
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
       return true;
     } catch (error) {
-      logger.error(`Failed to remove Factory Droid model: ${error}`);
+      const errorMessage = (error as Error).message;
+      logger.error(`Failed to remove Factory Droid model`);
+      logger.debug(`Factory Droid model removal failed, model: ${model}, error: ${errorMessage}`);
       return false;
     }
   }
