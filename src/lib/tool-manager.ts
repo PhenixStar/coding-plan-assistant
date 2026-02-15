@@ -7,18 +7,8 @@ import { configManager } from './config.js';
 import { platformManager } from './platform-manager.js';
 import { toolRegistry } from './tool-registry.js';
 import { toolInstaller } from './tool-installer.js';
+import { toolConfigManager } from './tool-config-manager.js';
 import { logger } from './logger.js';
-
-const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
-const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
-
-interface LegacyClaudeBackup {
-  env?: Record<string, string>;
-}
-
-interface ToolBackups {
-  toolConfigs?: Record<string, any>;
-}
 
 class ToolManager {
   private static instance: ToolManager;
@@ -48,114 +38,39 @@ class ToolManager {
     return toolInstaller.installTool(toolId);
   }
 
-  getToolConfig(toolId: string): any | undefined {
+  getToolConfig(toolId: string): Record<string, unknown> | undefined {
     const tool = toolRegistry.getTool(toolId);
     if (!tool || !tool.configPath) return undefined;
 
-    try {
-      if (fs.existsSync(tool.configPath)) {
-        const content = fs.readFileSync(tool.configPath, 'utf-8');
-        return JSON.parse(content);
-      }
-    } catch (error) {
-      logger.warning(`Failed to read config for ${tool.name}`);
-    }
-    return undefined;
+    return toolConfigManager.readToolConfig(tool.configPath) ?? undefined;
   }
 
-  updateToolConfig(toolId: string, config: any): boolean {
+  updateToolConfig(toolId: string, config: Record<string, unknown>): boolean {
     const tool = toolRegistry.getTool(toolId);
     if (!tool || !tool.configPath) return false;
 
-    try {
-      const configDir = path.dirname(tool.configPath);
-      if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true });
-      }
-
-      const existing: any = {};
-      if (fs.existsSync(tool.configPath)) {
-        const content = fs.readFileSync(tool.configPath, 'utf-8');
-        Object.assign(existing, JSON.parse(content));
-      }
-
-      const merged = { ...existing, ...config };
-      fs.writeFileSync(tool.configPath, JSON.stringify(merged, null, 2));
-      return true;
-    } catch (error) {
-      logger.error(`Failed to update config for ${tool.name}: ${error}`);
-      return false;
-    }
+    return toolConfigManager.writeToolConfig(tool.configPath, config);
   }
 
-  private replaceToolConfig(toolId: string, config: any): boolean {
+  private replaceToolConfig(toolId: string, config: Record<string, unknown>): boolean {
     const tool = toolRegistry.getTool(toolId);
     if (!tool || !tool.configPath) return false;
 
-    try {
-      const configDir = path.dirname(tool.configPath);
-      if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true });
-      }
-
-      fs.writeFileSync(tool.configPath, JSON.stringify(config, null, 2));
-      return true;
-    } catch (error) {
-      logger.error(`Failed to replace config for ${tool.name}: ${error}`);
-      return false;
-    }
-  }
-
-  private readBackups(): ToolBackups {
-    try {
-      if (!fs.existsSync(TOOL_BACKUP_FILE)) {
-        return {};
-      }
-      const content = fs.readFileSync(TOOL_BACKUP_FILE, 'utf-8');
-      return JSON.parse(content) as ToolBackups;
-    } catch {
-      return {};
-    }
-  }
-
-  private writeBackups(backups: ToolBackups): void {
-    if (!fs.existsSync(CPA_STATE_DIR)) {
-      fs.mkdirSync(CPA_STATE_DIR, { recursive: true });
-    }
-    fs.writeFileSync(TOOL_BACKUP_FILE, JSON.stringify(backups, null, 2));
+    return toolConfigManager.replaceToolConfig(tool.configPath, config);
   }
 
   private backupToolConfigIfNeeded(toolId: string): void {
-    const backups = this.readBackups();
-    backups.toolConfigs = backups.toolConfigs || {};
+    const tool = toolRegistry.getTool(toolId);
+    if (!tool || !tool.configPath) return;
 
-    if (Object.prototype.hasOwnProperty.call(backups.toolConfigs, toolId)) {
-      return;
-    }
-
-    const current = this.getToolConfig(toolId) || {};
-    backups.toolConfigs[toolId] = current;
-    this.writeBackups(backups);
+    toolConfigManager.backupToolConfig(toolId, tool.configPath);
   }
 
   private restoreToolConfigFromBackup(toolId: string): boolean {
-    const backups = this.readBackups();
-    const backupConfig = backups.toolConfigs && backups.toolConfigs[toolId];
+    const tool = toolRegistry.getTool(toolId);
+    if (!tool || !tool.configPath) return false;
 
-    if (backupConfig === undefined) {
-      return this.replaceToolConfig(toolId, {});
-    }
-
-    const restored = this.replaceToolConfig(toolId, backupConfig);
-    if (!restored) {
-      return false;
-    }
-
-    if (backups.toolConfigs) {
-      delete backups.toolConfigs[toolId];
-    }
-    this.writeBackups(backups);
-    return true;
+    return toolConfigManager.restoreToolConfig(toolId, tool.configPath);
   }
 
   loadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
