@@ -20,10 +20,42 @@ vi.mock('path', () => ({
 vi.mock('os', () => ({
   default: {
     homedir: () => '/home/testuser',
-    platform: () => 'linux'
+    platform: () => 'linux',
+    hostname: () => 'test-host'
   },
   homedir: () => '/home/testuser',
-  platform: () => 'linux'
+  platform: () => 'linux',
+  hostname: () => 'test-host'
+}));
+
+// Mock crypto module for encryption
+vi.mock('node:crypto', () => ({
+  default: {
+    randomBytes: () => Buffer.alloc(16),
+    pbkdf2Sync: () => Buffer.alloc(32),
+    createCipheriv: () => ({
+      update: () => 'encrypted',
+      final: () => '',
+      getAuthTag: () => Buffer.alloc(16)
+    }),
+    createDecipheriv: () => ({
+      update: () => 'decrypted',
+      final: () => '',
+      setAuthTag: () => {}
+    })
+  },
+  randomBytes: () => Buffer.alloc(16),
+  pbkdf2Sync: () => Buffer.alloc(32),
+  createCipheriv: () => ({
+    update: () => 'encrypted',
+    final: () => '',
+    getAuthTag: () => Buffer.alloc(16)
+  }),
+  createDecipheriv: () => ({
+    update: () => 'decrypted',
+    final: () => '',
+    setAuthTag: () => {}
+  })
 }));
 
 // Mock logger
@@ -48,7 +80,12 @@ describe('SecureCredentialManager', () => {
 
     // Setup default mock behavior - return empty credentials by default
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockImplementation(() => {
+    vi.mocked(fs.readFileSync).mockImplementation((path) => {
+      // Return encrypted mock data for key file
+      if (typeof path === 'string' && path.includes('credential-key.bin')) {
+        return Buffer.alloc(32);
+      }
+      // Return empty credentials (encrypted mock format)
       return JSON.stringify({ version: 1, credentials: {} });
     });
     vi.mocked(fs.writeFileSync).mockReturnValue(undefined);
