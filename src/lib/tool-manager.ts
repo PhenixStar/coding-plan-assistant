@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { execSync } from 'node:child_process';
-import type { ToolInfo, PlatformId } from '../types/tools.js';
-import type { ToolConfig, PlanType } from '../types/platform.js';
-import { configManager } from './config.js';
-import { platformManager } from './platform-manager.js';
+import { execFileSync } from 'node:child_process';
+import type { PlatformId } from '../types/tools.js';
+import type { ToolConfig } from '../types/platform.js';
+import { toolPlatformConfig } from './tool-platform-config.js';
+import { toolRegistry } from './tool-registry.js';
+import { toolConfigManager } from './tool-config-manager.js';
+import { toolBackupManager } from './tool-backup-manager.js';
 import { logger } from './logger.js';
 import { secureCredentialManager } from './secure-credential-manager.js';
 
@@ -89,6 +91,59 @@ interface ToolBackups {
   toolConfigs?: Record<string, any>;
 }
 
+// Shell metacharacters that require shell interpretation
+const SHELL_METACHARACTERS = /[;&|`$(){}[\]<>\\!#*?"'\n\r]/;
+
+/**
+ * Check if a command contains shell metacharacters
+ */
+function hasShellMetacharacters(command: string): boolean {
+  return SHELL_METACHARACTERS.test(command);
+}
+
+/**
+ * Parse a simple command into [program, args]
+ * Returns null if command contains shell metacharacters
+ */
+function parseSimpleCommand(command: string): { program: string; args: string[] } | null {
+  if (hasShellMetacharacters(command)) {
+    return null;
+  }
+
+  const parts = command.trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) {
+    return null;
+  }
+
+  return {
+    program: parts[0],
+    args: parts.slice(1)
+  };
+}
+
+/**
+ * Execute a command safely - uses execFileSync for simple commands
+ * Returns true if command succeeds, false otherwise
+ */
+function safeExecSync(command: string): boolean {
+  try {
+    const parsed = parseSimpleCommand(command);
+
+    if (parsed) {
+      // Safe: execFileSync doesn't use shell, args are passed directly
+      execFileSync(parsed.program, parsed.args, { stdio: 'ignore' });
+    } else {
+      // Shell command detected - reject for safety
+      logger.debug(`Shell command rejected for safety: ${command}`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    logger.debug(`Safe command execution failed for ${command}: ${(error as Error).message}`);
+    return false;
+  }
+}
+
 class ToolManager {
   private static instance: ToolManager;
 
@@ -113,20 +168,7 @@ class ToolManager {
     const tool = toolRegistry.getTool(toolId);
     if (!tool) return false;
 
-    try {
-      execSync(tool.command, { stdio: 'ignore' });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async installTool(toolId: string): Promise<boolean> {
-    const tool = SUPPORTED_TOOLS[toolId];
-    if (!tool) {
-      logger.error(`Tool not found: ${toolId}`);
-      return false;
-    }
+    return safeExecSync(tool.command);
 
     if (this.isToolInstalled(toolId)) {
       logger.info(`${tool.displayName} is already installed`);
