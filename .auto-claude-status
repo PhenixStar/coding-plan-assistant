@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "007-command-injection-risk-in-tool-installation",
+  "spec": "010-make-box-width-responsive-to-terminal-size",
   "state": "building",
   "subtasks": {
-    "completed": 8,
-    "total": 9,
+    "completed": 1,
+    "total": 2,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Final Verification",
+    "current": "Implement dynamic box width",
     "id": null,
     "total": 2
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 9,
-    "started_at": "2026-02-16T06:15:46.974211"
+    "number": 3,
+    "started_at": "2026-02-16T07:39:52.295619"
   },
-  "last_update": "2026-02-16T06:53:41.180278"
+  "last_update": "2026-02-16T07:49:42.646682"
 }
