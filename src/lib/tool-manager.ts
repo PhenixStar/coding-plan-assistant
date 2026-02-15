@@ -71,6 +71,78 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
     configPath: path.join(os.homedir(), '.factory', 'config.json'),
     displayName: 'Factory Droid',
     supported: true
+  },
+  'windsurf': {
+    id: 'windsurf',
+    name: 'Windsurf',
+    command: 'windsurf --version',
+    installCommand: 'echo "Install from https://windsurf.com"',
+    configPath: path.join(os.homedir(), '.windsurf', 'config.json'),
+    displayName: 'Windsurf',
+    supported: true
+  },
+  'zed-ai': {
+    id: 'zed-ai',
+    name: 'Zed AI',
+    command: 'zed --version',
+    installCommand: 'curl -fsSL https://zed.dev/install | sh',
+    configPath: path.join(os.homedir(), '.config', 'zed', 'settings.json'),
+    displayName: 'Zed AI',
+    supported: true
+  },
+  'copilot': {
+    id: 'copilot',
+    name: 'GitHub Copilot',
+    command: 'gh copilot --version',
+    installCommand: 'gh extension install github/copilot-cli',
+    configPath: path.join(os.homedir(), '.github-copilot'),
+    displayName: 'GitHub Copilot',
+    supported: true
+  },
+  'aider': {
+    id: 'aider',
+    name: 'Aider',
+    command: 'aider --version',
+    installCommand: 'pip install aider',
+    configPath: path.join(os.homedir(), '.aider.conf.json'),
+    displayName: 'Aider',
+    supported: true
+  },
+  'codeium': {
+    id: 'codeium',
+    name: 'Codeium',
+    command: 'code --list-extensions | grep -i codeium',
+    installCommand: 'code --install-extension codeium.codeium',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Codeium (VS Code)',
+    supported: true
+  },
+  'continue': {
+    id: 'continue',
+    name: 'Continue',
+    command: 'code --list-extensions | grep -i continue',
+    installCommand: 'code --install-extension continue.continue',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Continue (VS Code)',
+    supported: true
+  },
+  'bolt-new': {
+    id: 'bolt-new',
+    name: 'Bolt.new',
+    command: 'echo "Bolt.new is browser-based"',
+    installCommand: 'echo "Open https://bolt.new in your browser"',
+    configPath: '',
+    displayName: 'Bolt.new',
+    supported: true
+  },
+  'lovable': {
+    id: 'lovable',
+    name: 'Lovable',
+    command: 'echo "Lovable is browser-based"',
+    installCommand: 'echo "Open https://lovable.dev in your browser"',
+    configPath: '',
+    displayName: 'Lovable',
+    supported: true
   }
 };
 
@@ -280,6 +352,17 @@ class ToolManager {
         return this.updateToolConfig(toolId, { env: toolConfig.env });
       case 'factory-droid':
         return this.updateFactoryDroidConfig(toolConfig);
+      case 'aider':
+        return this.updateAiderConfig(toolConfig);
+      case 'copilot':
+        return this.updateCopilotConfig(toolConfig);
+      case 'codeium':
+      case 'continue':
+      case 'cline':
+      case 'roo-code':
+      case 'kilo-code':
+        this.backupToolConfigIfNeeded(toolId);
+        return this.updateVSCodeExtensionConfig(toolId, toolConfig);
       default:
         logger.warning(`Load config not implemented for ${tool.name}`);
         return false;
@@ -329,6 +412,209 @@ class ToolManager {
     }
   }
 
+  private updateAiderConfig(toolConfig: ToolConfig): boolean {
+    try {
+      const configPath = path.join(os.homedir(), '.aider.conf.json');
+      const configDir = path.dirname(configPath);
+
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Update with platform config
+      existing['model'] = toolConfig.model;
+      existing['api-key'] = toolConfig.apiKey;
+      if (toolConfig.baseUrl) {
+        existing['endpoint'] = toolConfig.baseUrl;
+      }
+
+      fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to update Aider config: ${error}`);
+      return false;
+    }
+  }
+
+  private updateCopilotConfig(toolConfig: ToolConfig): boolean {
+    try {
+      // Copilot CLI uses environment variables for custom endpoint configuration
+      // Create a wrapper script or config file
+      const configPath = path.join(os.homedir(), '.github-copilot', 'config.json');
+      const configDir = path.dirname(configPath);
+
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Store the configuration for Copilot CLI
+      existing['anthropic_api_key'] = toolConfig.apiKey;
+      existing['anthropic_endpoint'] = toolConfig.baseUrl || 'https://api.anthropic.com';
+      existing['model'] = toolConfig.model;
+
+      fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
+
+      // Also backup current env config if exists
+      const envConfigPath = path.join(os.homedir(), '.github-copilot', 'env.json');
+      let envExisting: any = {};
+      if (fs.existsSync(envConfigPath)) {
+        const content = fs.readFileSync(envConfigPath, 'utf-8');
+        envExisting = JSON.parse(content);
+      }
+
+      // Store environment variables for CLI usage
+      envExisting['ANTHROPIC_API_KEY'] = toolConfig.apiKey;
+      if (toolConfig.baseUrl) {
+        envExisting['ANTHROPIC_API_BASE_URL'] = toolConfig.baseUrl;
+      }
+
+      fs.writeFileSync(envConfigPath, JSON.stringify(envExisting, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to update Copilot config: ${error}`);
+      return false;
+    }
+  }
+
+  private updateVSCodeExtensionConfig(toolId: string, toolConfig: ToolConfig): boolean {
+    try {
+      const vscodeSettingsPath = this.getVSCodeSettingsPath();
+      if (!vscodeSettingsPath) {
+        logger.error('Could not find VS Code settings path');
+        return false;
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(vscodeSettingsPath)) {
+        const content = fs.readFileSync(vscodeSettingsPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Extension-specific config keys
+      const extensionConfig = this.getExtensionConfig(toolId, toolConfig);
+
+      // Merge with existing settings
+      const merged = { ...existing, ...extensionConfig };
+      fs.writeFileSync(vscodeSettingsPath, JSON.stringify(merged, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to update VS Code extension config for ${toolId}: ${error}`);
+      return false;
+    }
+  }
+
+  private getVSCodeSettingsPath(): string | null {
+    // Try multiple possible VS Code settings locations
+    const possiblePaths = [
+      path.join(os.homedir(), '.config', 'Code', 'User', 'settings.json'),
+      path.join(os.homedir(), '.config', 'Cursor', 'User', 'settings.json'),
+      path.join(os.homedir(), '.vscode', 'settings.json'),
+      path.join(os.homedir(), 'AppData', 'Roaming', 'Code', 'User', 'settings.json'),
+      path.join(os.homedir(), 'AppData', 'Roaming', 'Cursor', 'User', 'settings.json')
+    ];
+
+    for (const settingsPath of possiblePaths) {
+      if (fs.existsSync(settingsPath)) {
+        return settingsPath;
+      }
+    }
+
+    // Return the most common one as default
+    return possiblePaths[0];
+  }
+
+  private getExtensionConfig(toolId: string, toolConfig: ToolConfig): any {
+    switch (toolId) {
+      case 'codeium':
+        return {
+          'codeium.enable': true,
+          'codeium.anthropicApiKey': toolConfig.apiKey,
+          'codeium.model': toolConfig.model
+        };
+      case 'continue':
+        return {
+          'continue.enable': true,
+          'continue.anthropicApiKey': toolConfig.apiKey,
+          'continue.model': toolConfig.model,
+          'continue.baseUrl': toolConfig.baseUrl || 'https://api.anthropic.com'
+        };
+      case 'cline':
+        return {
+          'cline.enable': true,
+          'cline.anthropicApiKey': toolConfig.apiKey,
+          'cline.model': toolConfig.model,
+          'cline.apiUrl': toolConfig.baseUrl || 'https://api.anthropic.com'
+        };
+      case 'roo-code':
+        return {
+          'rooCode.enable': true,
+          'rooCode.anthropicApiKey': toolConfig.apiKey,
+          'rooCode.model': toolConfig.model
+        };
+      case 'kilo-code':
+        return {
+          'kiloCode.enable': true,
+          'kiloCode.anthropicApiKey': toolConfig.apiKey,
+          'kiloCode.model': toolConfig.model
+        };
+      default:
+        return {};
+    }
+  }
+
+  private removeVSCodeExtensionConfig(toolId: string): boolean {
+    try {
+      const vscodeSettingsPath = this.getVSCodeSettingsPath();
+      if (!vscodeSettingsPath || !fs.existsSync(vscodeSettingsPath)) {
+        return true;
+      }
+
+      const content = fs.readFileSync(vscodeSettingsPath, 'utf-8');
+      const settings: any = JSON.parse(content);
+
+      const keysToRemove = this.getExtensionConfigKeys(toolId);
+
+      for (const key of keysToRemove) {
+        delete settings[key];
+      }
+
+      fs.writeFileSync(vscodeSettingsPath, JSON.stringify(settings, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to remove VS Code extension config for ${toolId}: ${error}`);
+      return false;
+    }
+  }
+
+  private getExtensionConfigKeys(toolId: string): string[] {
+    switch (toolId) {
+      case 'codeium':
+        return ['codeium.enable', 'codeium.anthropicApiKey', 'codeium.model'];
+      case 'continue':
+        return ['continue.enable', 'continue.anthropicApiKey', 'continue.model', 'continue.baseUrl'];
+      case 'cline':
+        return ['cline.enable', 'cline.anthropicApiKey', 'cline.model', 'cline.apiUrl'];
+      case 'roo-code':
+        return ['rooCode.enable', 'rooCode.anthropicApiKey', 'rooCode.model'];
+      case 'kilo-code':
+        return ['kiloCode.enable', 'kiloCode.anthropicApiKey', 'kiloCode.model'];
+      default:
+        return [];
+    }
+  }
+
   unloadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
     const tool = SUPPORTED_TOOLS[toolId];
     if (!tool) return false;
@@ -343,8 +629,74 @@ class ToolManager {
         return this.restoreToolConfigFromBackup(toolId);
       case 'factory-droid':
         return this.removeFactoryDroidModel(toolConfig?.model || '');
+      case 'aider':
+        return this.removeAiderConfig();
+      case 'copilot':
+        return this.removeCopilotConfig();
+      case 'codeium':
+      case 'continue':
+      case 'cline':
+      case 'roo-code':
+      case 'kilo-code':
+        return this.removeVSCodeExtensionConfig(toolId);
       default:
         return false;
+    }
+  }
+
+  private removeAiderConfig(): boolean {
+    try {
+      const configPath = path.join(os.homedir(), '.aider.conf.json');
+      if (!fs.existsSync(configPath)) return true;
+
+      const content = fs.readFileSync(configPath, 'utf-8');
+      const config: any = JSON.parse(content);
+
+      // Remove platform-specific keys
+      delete config['model'];
+      delete config['api-key'];
+      delete config['endpoint'];
+
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to remove Aider config: ${error}`);
+      return false;
+    }
+  }
+
+  private removeCopilotConfig(): boolean {
+    try {
+      const configPath = path.join(os.homedir(), '.github-copilot', 'config.json');
+      const envConfigPath = path.join(os.homedir(), '.github-copilot', 'env.json');
+
+      // Remove config.json entries
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        const config: any = JSON.parse(content);
+
+        delete config['anthropic_api_key'];
+        delete config['anthropic_endpoint'];
+        delete config['model'];
+
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      }
+
+      // Remove env.json entries
+      if (fs.existsSync(envConfigPath)) {
+        const content = fs.readFileSync(envConfigPath, 'utf-8');
+        const envConfig: any = JSON.parse(content);
+
+        delete envConfig['ANTHROPIC_API_KEY'];
+        delete envConfig['ANTHROPIC_API_BASE_URL'];
+
+        fs.writeFileSync(envConfigPath, JSON.stringify(envConfig, null, 2));
+      }
+
+      return true;
+    } catch (error) {
+      logger.error(`Failed to remove Copilot config: ${error}`);
+      return false;
     }
   }
 

@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\001-extended-ai-coding-tool-support/**)",
+      "Write(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\001-extended-ai-coding-tool-support/**)",
+      "Edit(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\001-extended-ai-coding-tool-support/**)",
+      "Glob(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\001-extended-ai-coding-tool-support/**)",
+      "Grep(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\001-extended-ai-coding-tool-support/**)",
+      "Read(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\001-extended-ai-coding-tool-support\\.auto-claude\\specs\\001-extended-ai-coding-tool-support/**)",
+      "Write(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\001-extended-ai-coding-tool-support\\.auto-claude\\specs\\001-extended-ai-coding-tool-support/**)",
+      "Edit(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\001-extended-ai-coding-tool-support\\.auto-claude\\specs\\001-extended-ai-coding-tool-support/**)",
+      "Read(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Write(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Edit(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Glob(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Grep(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__query-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
