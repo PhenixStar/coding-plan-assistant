@@ -51,7 +51,7 @@
     "not_installed": "Not installed"
   },
   "auth": {
-    "set_usage": "uchelper auth <platform> <token> - Set API key for platform",
+    "set_usage": "uchelper auth <platform> <token> <password> - Set API key for platform (password required for encryption)",
     "platform_prompt": "Select platform",
     "token_prompt": "Enter API key",
     "token_required": "API key cannot be empty",
@@ -66,7 +66,8 @@
     "reload_failed": "Failed to reload configuration",
     "reload_missing_config": "Missing platform or API key configuration. Please run 'uchelper auth' first.",
     "reload_tool_not_supported": "Tool '{{tool}}' is not supported for reload",
-    "platform_not_supported": "Platform '{{platform}}' is not supported"
+    "platform_not_supported": "Platform '{{platform}}' is not supported",
+    "password_required": "Master password is required for encryption. Usage: uchelper auth <platform> <token> <password>"
   },
   "wizard": {
     "banner_subtitle": "Manage Your AI Coding Tools",
@@ -164,7 +165,17 @@
     "validating_api_key": "Validating API Key...",
     "api_key_valid": "API Key is valid",
     "api_key_invalid": "API Key is invalid or expired",
-    "api_key_network_error": "Network error, please check your connection"
+    "api_key_network_error": "Network error, please check your connection",
+    "set_master_password": "Do you want to set a master password to encrypt your API key?",
+    "enter_master_password": "Enter master password:",
+    "confirm_master_password": "Confirm master password:",
+    "password_required": "Password cannot be empty",
+    "password_min_length": "Password must be at least 6 characters",
+    "password_mismatch": "Passwords do not match",
+    "master_password_set": "Master password set successfully",
+    "enter_password_to_decrypt": "Enter master password to decrypt API key:",
+    "wrong_password": "Incorrect master password",
+    "password_required_for_encryption": "API key not saved. Set a master password first to encrypt and store your API key."
   },
   "doctor": {
     "checking": "Running health check...",

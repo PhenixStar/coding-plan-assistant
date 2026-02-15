@@ -190,22 +190,37 @@ class ConfigManager {
     this.saveConfig();
   }
 
-  getApiKey(platform?: PlatformId): string | undefined {
+  getApiKey(platform?: PlatformId, password?: string): string | undefined {
     const plat = platform || this.config.active_platform;
-    return this.config[plat]?.api_key;
+    // Only return encrypted API key when password is provided
+    if (password) {
+      const encryptedKey = this.config[plat]?.encrypted_api_key;
+      if (encryptedKey) {
+        try {
+          return decrypt(encryptedKey, password);
+        } catch (error) {
+          logger.warning(`Failed to decrypt API key: ${error}`);
+        }
+      }
+    }
+    // No fallback to plaintext - return undefined if no encrypted key available
+    return undefined;
   }
 
-  setApiKey(platform: PlatformId, apiKey: string): void {
+  setApiKey(platform: PlatformId, apiKey: string, password: string): void {
     if (!this.config[platform]) {
       this.config[platform] = {};
     }
-    (this.config[platform] as PlatformConfig).api_key = apiKey;
+    // Always encrypt and store the API key
+    const encryptedKey = encrypt(apiKey, password);
+    (this.config[platform] as PlatformConfig).encrypted_api_key = encryptedKey;
     this.saveConfig();
   }
 
   revokeApiKey(platform: PlatformId): void {
     if (this.config[platform]) {
       delete (this.config[platform] as PlatformConfig).api_key;
+      delete (this.config[platform] as PlatformConfig).encrypted_api_key;
       this.saveConfig();
     }
   }
@@ -220,6 +235,70 @@ class ConfigManager {
       this.config[platform] = {};
     }
     (this.config[platform] as PlatformConfig).endpoint = endpoint;
+    this.saveConfig();
+  }
+
+  // Encrypted API key storage methods
+  setEncryptedApiKey(platform: PlatformId, apiKey: string, password: string): void {
+    if (!this.config[platform]) {
+      this.config[platform] = {};
+    }
+    const encryptedKey = encrypt(apiKey, password);
+    (this.config[platform] as PlatformConfig).encrypted_api_key = encryptedKey;
+    this.saveConfig();
+  }
+
+  getDecryptedApiKey(platform: PlatformId, password: string): string | undefined {
+    const plat = platform || this.config.active_platform;
+    const encryptedKey = this.config[plat]?.encrypted_api_key;
+    if (!encryptedKey) {
+      return undefined;
+    }
+    try {
+      return decrypt(encryptedKey, password);
+    } catch (error) {
+      logger.warning(`Failed to decrypt API key: ${error}`);
+      return undefined;
+    }
+  }
+
+  revokeEncryptedApiKey(platform: PlatformId): void {
+    if (this.config[platform]) {
+      delete (this.config[platform] as PlatformConfig).encrypted_api_key;
+      this.saveConfig();
+    }
+  }
+
+  // Master password methods
+  hasMasterPassword(): boolean {
+    return !!this.config.master_password_hash;
+  }
+
+  setMasterPassword(password: string): void {
+    // Store a hash of the password for verification
+    const hash = encrypt('master_password_verifier', password);
+    this.config.master_password_hash = hash;
+    this.saveConfig();
+  }
+
+  verifyMasterPassword(password: string): boolean {
+    if (!this.config.master_password_hash) {
+      return false;
+    }
+    try {
+      const verifier = decrypt(this.config.master_password_hash, password);
+      return verifier === 'master_password_verifier';
+    } catch {
+      return false;
+    }
+  }
+
+  getMasterPasswordHash(): string | undefined {
+    return this.config.master_password_hash;
+  }
+
+  clearMasterPassword(): void {
+    delete this.config.master_password_hash;
     this.saveConfig();
   }
 }

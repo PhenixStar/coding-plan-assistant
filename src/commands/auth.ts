@@ -15,6 +15,7 @@ export async function handleAuth(args: string[]): Promise<void> {
 
   const platform = args[0] as PlatformId;
   const token = args[1];
+  const password = args[2];
 
   if (!['glm', 'minimax'].includes(platform)) {
     logger.error(i18n.t('auth.platform_not_supported', { platform }));
@@ -26,8 +27,13 @@ export async function handleAuth(args: string[]): Promise<void> {
     return;
   }
 
+  if (!password) {
+    logger.error(i18n.t('auth.password_required'));
+    return;
+  }
+
   configManager.setPlatform(platform);
-  configManager.setApiKey(platform, token);
+  configManager.setApiKey(platform, token, password);
   logger.success(i18n.t('auth.saved', { platform }));
 }
 
@@ -65,9 +71,26 @@ export async function handleReload(args: string[]): Promise<void> {
 
 async function interactiveAuth(): Promise<void> {
   const platform = await selectPlatform();
-  const apiKey = await inputApiKey(platform);
-  configManager.setApiKey(platform, apiKey);
-  logger.success(i18n.t('auth.saved', { platform }));
+  const { password } = await inquirer.prompt([
+    {
+      type: 'password',
+      name: 'password',
+      message: i18n.t('wizard.enter_master_password'),
+      validate: (input: string) => {
+        if (!input || input.trim().length === 0) {
+          return i18n.t('wizard.password_required');
+        }
+        return true;
+      }
+    }
+  ]);
+  const apiKey = await inputApiKey(platform, password);
+  if (password) {
+    configManager.setApiKey(platform, apiKey, password);
+    logger.success(i18n.t('auth.saved', { platform }));
+  } else {
+    logger.warning(i18n.t('auth.password_required_for_encryption'));
+  }
 }
 
 async function selectPlatform(): Promise<PlatformId> {
@@ -88,8 +111,8 @@ async function selectPlatform(): Promise<PlatformId> {
   return platform;
 }
 
-async function inputApiKey(platform: PlatformId): Promise<string> {
-  const existingKey = configManager.getApiKey(platform);
+async function inputApiKey(platform: PlatformId, password: string): Promise<string> {
+  const existingKey = configManager.getApiKey(platform, password);
   const apiDocsUrl = platformManager.getApiDocsUrl(platform);
 
   console.log('\n' + i18n.t('auth.get_api_key_hint', { url: apiDocsUrl }));
