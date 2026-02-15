@@ -36,6 +36,20 @@
     "minimax": "MiniMax",
     "select": "Select AI platform"
   },
+  "tool": {
+    "list_title": "Supported tools",
+    "load_usage": "uchelper tool load <tool> [glm|minimax] - Load platform config into tool",
+    "unload_usage": "uchelper tool unload <tool> [glm|minimax] - Unload config from tool",
+    "load_not_supported": "Load is not supported for tool: {{tool}}",
+    "unload_not_supported": "Unload is not supported for tool: {{tool}}",
+    "load_success": "Loaded {{platform}} config into {{tool}}",
+    "load_failed": "Failed to load config into {{tool}}",
+    "unload_success": "Unloaded config from {{tool}}",
+    "unload_failed": "Failed to unload config from {{tool}}",
+    "inspect_only": " (inspect only)",
+    "installed": "Installed",
+    "not_installed": "Not installed"
+  },
   "auth": {
     "set_usage": "uchelper auth <platform> <token> - Set API key for platform",
     "platform_prompt": "Select platform",
