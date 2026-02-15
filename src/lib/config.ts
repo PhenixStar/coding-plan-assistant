@@ -4,6 +4,7 @@ import os from 'node:os';
 import yaml from 'js-yaml';
 import type { UnifiedConfig, PlatformId, PlanType, Language, PlatformConfig } from '../types/config.js';
 import { logger } from './logger.js';
+import { encrypt, decrypt } from './crypto.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.unified-coding-helper');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.yaml');
@@ -161,6 +162,37 @@ class ConfigManager {
     }
     (this.config[platform] as PlatformConfig).endpoint = endpoint;
     this.saveConfig();
+  }
+
+  // Encrypted API key storage methods
+  setEncryptedApiKey(platform: PlatformId, apiKey: string, password: string): void {
+    if (!this.config[platform]) {
+      this.config[platform] = {};
+    }
+    const encryptedKey = encrypt(apiKey, password);
+    (this.config[platform] as PlatformConfig).encrypted_api_key = encryptedKey;
+    this.saveConfig();
+  }
+
+  getDecryptedApiKey(platform: PlatformId, password: string): string | undefined {
+    const plat = platform || this.config.active_platform;
+    const encryptedKey = this.config[plat]?.encrypted_api_key;
+    if (!encryptedKey) {
+      return undefined;
+    }
+    try {
+      return decrypt(encryptedKey, password);
+    } catch (error) {
+      logger.warning(`Failed to decrypt API key: ${error}`);
+      return undefined;
+    }
+  }
+
+  revokeEncryptedApiKey(platform: PlatformId): void {
+    if (this.config[platform]) {
+      delete (this.config[platform] as PlatformConfig).encrypted_api_key;
+      this.saveConfig();
+    }
   }
 }
 
