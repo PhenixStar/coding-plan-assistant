@@ -352,6 +352,10 @@ class ToolManager {
         return this.updateToolConfig(toolId, { env: toolConfig.env });
       case 'factory-droid':
         return this.updateFactoryDroidConfig(toolConfig);
+      case 'aider':
+        return this.updateAiderConfig(toolConfig);
+      case 'copilot':
+        return this.updateCopilotConfig(toolConfig);
       default:
         logger.warning(`Load config not implemented for ${tool.name}`);
         return false;
@@ -401,6 +405,82 @@ class ToolManager {
     }
   }
 
+  private updateAiderConfig(toolConfig: ToolConfig): boolean {
+    try {
+      const configPath = path.join(os.homedir(), '.aider.conf.json');
+      const configDir = path.dirname(configPath);
+
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Update with platform config
+      existing['model'] = toolConfig.model;
+      existing['api-key'] = toolConfig.apiKey;
+      if (toolConfig.baseUrl) {
+        existing['endpoint'] = toolConfig.baseUrl;
+      }
+
+      fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to update Aider config: ${error}`);
+      return false;
+    }
+  }
+
+  private updateCopilotConfig(toolConfig: ToolConfig): boolean {
+    try {
+      // Copilot CLI uses environment variables for custom endpoint configuration
+      // Create a wrapper script or config file
+      const configPath = path.join(os.homedir(), '.github-copilot', 'config.json');
+      const configDir = path.dirname(configPath);
+
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Store the configuration for Copilot CLI
+      existing['anthropic_api_key'] = toolConfig.apiKey;
+      existing['anthropic_endpoint'] = toolConfig.baseUrl || 'https://api.anthropic.com';
+      existing['model'] = toolConfig.model;
+
+      fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
+
+      // Also backup current env config if exists
+      const envConfigPath = path.join(os.homedir(), '.github-copilot', 'env.json');
+      let envExisting: any = {};
+      if (fs.existsSync(envConfigPath)) {
+        const content = fs.readFileSync(envConfigPath, 'utf-8');
+        envExisting = JSON.parse(content);
+      }
+
+      // Store environment variables for CLI usage
+      envExisting['ANTHROPIC_API_KEY'] = toolConfig.apiKey;
+      if (toolConfig.baseUrl) {
+        envExisting['ANTHROPIC_API_BASE_URL'] = toolConfig.baseUrl;
+      }
+
+      fs.writeFileSync(envConfigPath, JSON.stringify(envExisting, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to update Copilot config: ${error}`);
+      return false;
+    }
+  }
+
   unloadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
     const tool = SUPPORTED_TOOLS[toolId];
     if (!tool) return false;
@@ -415,8 +495,68 @@ class ToolManager {
         return this.restoreToolConfigFromBackup(toolId);
       case 'factory-droid':
         return this.removeFactoryDroidModel(toolConfig?.model || '');
+      case 'aider':
+        return this.removeAiderConfig();
+      case 'copilot':
+        return this.removeCopilotConfig();
       default:
         return false;
+    }
+  }
+
+  private removeAiderConfig(): boolean {
+    try {
+      const configPath = path.join(os.homedir(), '.aider.conf.json');
+      if (!fs.existsSync(configPath)) return true;
+
+      const content = fs.readFileSync(configPath, 'utf-8');
+      const config: any = JSON.parse(content);
+
+      // Remove platform-specific keys
+      delete config['model'];
+      delete config['api-key'];
+      delete config['endpoint'];
+
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      return true;
+    } catch (error) {
+      logger.error(`Failed to remove Aider config: ${error}`);
+      return false;
+    }
+  }
+
+  private removeCopilotConfig(): boolean {
+    try {
+      const configPath = path.join(os.homedir(), '.github-copilot', 'config.json');
+      const envConfigPath = path.join(os.homedir(), '.github-copilot', 'env.json');
+
+      // Remove config.json entries
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        const config: any = JSON.parse(content);
+
+        delete config['anthropic_api_key'];
+        delete config['anthropic_endpoint'];
+        delete config['model'];
+
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      }
+
+      // Remove env.json entries
+      if (fs.existsSync(envConfigPath)) {
+        const content = fs.readFileSync(envConfigPath, 'utf-8');
+        const envConfig: any = JSON.parse(content);
+
+        delete envConfig['ANTHROPIC_API_KEY'];
+        delete envConfig['ANTHROPIC_API_BASE_URL'];
+
+        fs.writeFileSync(envConfigPath, JSON.stringify(envConfig, null, 2));
+      }
+
+      return true;
+    } catch (error) {
+      logger.error(`Failed to remove Copilot config: ${error}`);
+      return false;
     }
   }
 
