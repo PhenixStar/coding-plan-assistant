@@ -259,6 +259,87 @@ class ToolManager {
     }
   }
 
+  private setupCopilotSecureConfig(
+    platformId: PlatformId,
+    toolConfig: ToolConfig,
+    envPrefix: string
+  ): boolean {
+    try {
+      // Store credentials securely using secure-credential-manager
+      const toolId = 'copilot';
+
+      // Store API key as secure credential
+      if (toolConfig.apiKey) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'api-key',
+          toolConfig.apiKey,
+          'env'
+        );
+      }
+
+      // Store endpoint as secure credential if provided
+      if (toolConfig.baseUrl) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'endpoint',
+          toolConfig.baseUrl,
+          'env'
+        );
+      }
+
+      // Create wrapper script for the tool
+      secureCredentialManager.createWrapperScript(platformId, toolId);
+
+      // Create config with environment variable references instead of plaintext values
+      const apiKeyEnvVar = this.getSecureEnvVarName(envPrefix, 'API_KEY');
+      const endpointEnvVar = this.getSecureEnvVarName(envPrefix, 'ENDPOINT');
+
+      const configPath = path.join(os.homedir(), '.github-copilot', 'config.json');
+      const configDir = path.dirname(configPath);
+
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Update with environment variable references
+      existing['anthropic_api_key'] = `\${${apiKeyEnvVar}}`;
+      existing['anthropic_endpoint'] = toolConfig.baseUrl ? `\${${endpointEnvVar}}` : 'https://api.anthropic.com';
+      existing['model'] = toolConfig.model;
+
+      fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
+
+      // Also update env.json with references
+      const envConfigPath = path.join(os.homedir(), '.github-copilot', 'env.json');
+      let envExisting: any = {};
+      if (fs.existsSync(envConfigPath)) {
+        const content = fs.readFileSync(envConfigPath, 'utf-8');
+        envExisting = JSON.parse(content);
+      }
+
+      envExisting['ANTHROPIC_API_KEY'] = `\${${apiKeyEnvVar}}`;
+      if (toolConfig.baseUrl) {
+        envExisting['ANTHROPIC_API_BASE_URL'] = `\${${endpointEnvVar}}`;
+      }
+
+      fs.writeFileSync(envConfigPath, JSON.stringify(envExisting, null, 2));
+
+      logger.success(`Secure config set up for Copilot`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to setup secure config for Copilot: ${error}`);
+      return false;
+    }
+  }
+
   private readBackups(): ToolBackups {
     try {
       if (!fs.existsSync(TOOL_BACKUP_FILE)) {
@@ -372,6 +453,14 @@ class ToolManager {
         // Fallback to direct config (legacy behavior)
         return this.updateAiderConfig(toolConfig);
       case 'copilot':
+        this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for env-based storage
+          return this.setupCopilotSecureConfig(platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateCopilotConfig(toolConfig);
       case 'codeium':
       case 'continue':
