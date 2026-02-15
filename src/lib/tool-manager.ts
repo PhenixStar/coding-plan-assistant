@@ -6,145 +6,8 @@ import type { ToolInfo, PlatformId } from '../types/tools.js';
 import type { ToolConfig, PlanType } from '../types/platform.js';
 import { configManager } from './config.js';
 import { platformManager } from './platform-manager.js';
+import { toolRegistry } from './tool-registry.js';
 import { logger } from './logger.js';
-
-const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
-  'claude-code': {
-    id: 'claude-code',
-    name: 'Claude Code',
-    command: 'claude',
-    installCommand: 'npm install -g @anthropic-ai/claude-code',
-    configPath: path.join(os.homedir(), '.claude', 'settings.json'),
-    displayName: 'Claude Code',
-    supported: true
-  },
-  'cursor': {
-    id: 'cursor',
-    name: 'Cursor',
-    command: 'cursor',
-    installCommand: 'cursor --version || echo "Install from https://cursor.sh"',
-    configPath: path.join(os.homedir(), '.cursor', 'settings.json'),
-    displayName: 'Cursor',
-    supported: true
-  },
-  'cline': {
-    id: 'cline',
-    name: 'Cline',
-    command: 'code --list-extensions | grep -i cline',
-    installCommand: 'code --install-extension abc.cline',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Cline (VS Code)',
-    supported: true
-  },
-  'roo-code': {
-    id: 'roo-code',
-    name: 'Roo Code',
-    command: 'code --list-extensions | grep -i "roo code"',
-    installCommand: 'code --install-extension roovetterinc.roo-code',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Roo Code (VS Code)',
-    supported: true
-  },
-  'kilo-code': {
-    id: 'kilo-code',
-    name: 'Kilo Code',
-    command: 'code --list-extensions | grep -i "kilo code"',
-    installCommand: 'code --install-extension kilinc.kilo-code',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Kilo Code (VS Code)',
-    supported: true
-  },
-  'opencode': {
-    id: 'opencode',
-    name: 'OpenCode',
-    command: 'opencode --version',
-    installCommand: 'npm install -g opencode',
-    configPath: path.join(os.homedir(), '.opencode', 'config.json'),
-    displayName: 'OpenCode',
-    supported: true
-  },
-  'factory-droid': {
-    id: 'factory-droid',
-    name: 'Factory Droid',
-    command: 'droid --version',
-    installCommand: 'curl -fsSL https://app.factory.ai/cli | sh',
-    configPath: path.join(os.homedir(), '.factory', 'config.json'),
-    displayName: 'Factory Droid',
-    supported: true
-  },
-  'windsurf': {
-    id: 'windsurf',
-    name: 'Windsurf',
-    command: 'windsurf --version',
-    installCommand: 'echo "Install from https://windsurf.com"',
-    configPath: path.join(os.homedir(), '.windsurf', 'config.json'),
-    displayName: 'Windsurf',
-    supported: true
-  },
-  'zed-ai': {
-    id: 'zed-ai',
-    name: 'Zed AI',
-    command: 'zed --version',
-    installCommand: 'curl -fsSL https://zed.dev/install | sh',
-    configPath: path.join(os.homedir(), '.config', 'zed', 'settings.json'),
-    displayName: 'Zed AI',
-    supported: true
-  },
-  'copilot': {
-    id: 'copilot',
-    name: 'GitHub Copilot',
-    command: 'gh copilot --version',
-    installCommand: 'gh extension install github/copilot-cli',
-    configPath: path.join(os.homedir(), '.github-copilot'),
-    displayName: 'GitHub Copilot',
-    supported: true
-  },
-  'aider': {
-    id: 'aider',
-    name: 'Aider',
-    command: 'aider --version',
-    installCommand: 'pip install aider',
-    configPath: path.join(os.homedir(), '.aider.conf.json'),
-    displayName: 'Aider',
-    supported: true
-  },
-  'codeium': {
-    id: 'codeium',
-    name: 'Codeium',
-    command: 'code --list-extensions | grep -i codeium',
-    installCommand: 'code --install-extension codeium.codeium',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Codeium (VS Code)',
-    supported: true
-  },
-  'continue': {
-    id: 'continue',
-    name: 'Continue',
-    command: 'code --list-extensions | grep -i continue',
-    installCommand: 'code --install-extension continue.continue',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Continue (VS Code)',
-    supported: true
-  },
-  'bolt-new': {
-    id: 'bolt-new',
-    name: 'Bolt.new',
-    command: 'echo "Bolt.new is browser-based"',
-    installCommand: 'echo "Open https://bolt.new in your browser"',
-    configPath: '',
-    displayName: 'Bolt.new',
-    supported: true
-  },
-  'lovable': {
-    id: 'lovable',
-    name: 'Lovable',
-    command: 'echo "Lovable is browser-based"',
-    installCommand: 'echo "Open https://lovable.dev in your browser"',
-    configPath: '',
-    displayName: 'Lovable',
-    supported: true
-  }
-};
 
 const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
 const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
@@ -170,15 +33,15 @@ class ToolManager {
   }
 
   getTool(toolId: string): ToolInfo | undefined {
-    return SUPPORTED_TOOLS[toolId];
+    return toolRegistry.getTool(toolId);
   }
 
   getSupportedTools(): ToolInfo[] {
-    return Object.values(SUPPORTED_TOOLS).filter(t => t.supported);
+    return toolRegistry.getSupportedTools();
   }
 
   isToolInstalled(toolId: string): boolean {
-    const tool = SUPPORTED_TOOLS[toolId];
+    const tool = toolRegistry.getTool(toolId);
     if (!tool) return false;
 
     try {
@@ -190,7 +53,7 @@ class ToolManager {
   }
 
   async installTool(toolId: string): Promise<boolean> {
-    const tool = SUPPORTED_TOOLS[toolId];
+    const tool = toolRegistry.getTool(toolId);
     if (!tool) {
       logger.error(`Tool not found: ${toolId}`);
       return false;
@@ -213,7 +76,7 @@ class ToolManager {
   }
 
   getToolConfig(toolId: string): any | undefined {
-    const tool = SUPPORTED_TOOLS[toolId];
+    const tool = toolRegistry.getTool(toolId);
     if (!tool || !tool.configPath) return undefined;
 
     try {
@@ -228,7 +91,7 @@ class ToolManager {
   }
 
   updateToolConfig(toolId: string, config: any): boolean {
-    const tool = SUPPORTED_TOOLS[toolId];
+    const tool = toolRegistry.getTool(toolId);
     if (!tool || !tool.configPath) return false;
 
     try {
@@ -253,7 +116,7 @@ class ToolManager {
   }
 
   private replaceToolConfig(toolId: string, config: any): boolean {
-    const tool = SUPPORTED_TOOLS[toolId];
+    const tool = toolRegistry.getTool(toolId);
     if (!tool || !tool.configPath) return false;
 
     try {
@@ -323,7 +186,7 @@ class ToolManager {
   }
 
   loadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
-    const tool = SUPPORTED_TOOLS[toolId];
+    const tool = toolRegistry.getTool(toolId);
     if (!tool) {
       logger.error(`Tool not found: ${toolId}`);
       return false;
@@ -616,7 +479,7 @@ class ToolManager {
   }
 
   unloadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
-    const tool = SUPPORTED_TOOLS[toolId];
+    const tool = toolRegistry.getTool(toolId);
     if (!tool) return false;
 
     const toolConfig = platformManager.getToolConfig(platformId, 'global', '', '');
@@ -721,7 +584,7 @@ class ToolManager {
   }
 
   getInstalledTools(): string[] {
-    return Object.keys(SUPPORTED_TOOLS).filter(id => this.isToolInstalled(id));
+    return toolRegistry.getToolIds().filter(id => this.isToolInstalled(id));
   }
 
   isGitInstalled(): boolean {
