@@ -150,7 +150,16 @@
     "validating_api_key": "正在验证 API 密钥...",
     "api_key_valid": "API 密钥有效",
     "api_key_invalid": "API 密钥无效或已过期",
-    "api_key_network_error": "网络错误，请检查您的连接"
+    "api_key_network_error": "网络错误，请检查您的连接",
+    "set_master_password": "是否设置主密码来加密您的 API 密钥？",
+    "enter_master_password": "请输入主密码：",
+    "confirm_master_password": "请再次输入主密码：",
+    "password_required": "密码不能为空",
+    "password_min_length": "密码至少需要6个字符",
+    "password_mismatch": "两次输入的密码不一致",
+    "master_password_set": "主密码设置成功",
+    "enter_password_to_decrypt": "请输入主密码以解密 API 密钥：",
+    "wrong_password": "主密码错误"
   },
   "doctor": {
     "checking": "正在运行健康检查...",

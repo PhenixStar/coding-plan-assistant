@@ -45,10 +45,67 @@ class Wizard {
     await this.configLanguage();
     await this.configPlatform();
     await this.configPlan();
-    await this.configApiKey(configManager.getActivePlatform());
+
+    // Ask if user wants to set a master password for encryption
+    const { usePassword } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'usePassword',
+        message: i18n.t('wizard.set_master_password'),
+        default: true
+      }
+    ]);
+
+    let masterPassword: string | undefined;
+    if (usePassword) {
+      masterPassword = await this.configMasterPassword();
+    }
+
+    await this.configApiKey(configManager.getActivePlatform(), masterPassword);
 
     console.log('');
     logger.success(i18n.t('messages.config_saved'));
+  }
+
+  async configMasterPassword(): Promise<string> {
+    while (true) {
+      const { password } = await inquirer.prompt([
+        {
+          type: 'password',
+          name: 'password',
+          message: i18n.t('wizard.enter_master_password'),
+          validate: (input: string) => {
+            if (!input || input.trim().length === 0) {
+              return i18n.t('wizard.password_required');
+            }
+            if (input.length < 6) {
+              return i18n.t('wizard.password_min_length');
+            }
+            return true;
+          }
+        }
+      ]);
+
+      const { confirm } = await inquirer.prompt([
+        {
+          type: 'password',
+          name: 'confirm',
+          message: i18n.t('wizard.confirm_master_password'),
+          validate: (input: string) => {
+            if (input !== password) {
+              return i18n.t('wizard.password_mismatch');
+            }
+            return true;
+          }
+        }
+      ]);
+
+      // Store the master password hash in config
+      configManager.setMasterPassword(password);
+      logger.success(i18n.t('wizard.master_password_set'));
+
+      return password;
+    }
   }
 
   async configLanguage(): Promise<Language> {
@@ -108,8 +165,8 @@ class Wizard {
     return plan;
   }
 
-  async configApiKey(platform: PlatformId): Promise<string> {
-    const existingKey = configManager.getApiKey(platform);
+  async configApiKey(platform: PlatformId, password?: string): Promise<string> {
+    const existingKey = configManager.getApiKey(platform, password);
     const apiDocsUrl = platformManager.getApiDocsUrl(platform);
 
     console.log('\n' + i18n.t('auth.get_api_key_hint', { url: apiDocsUrl }));
@@ -129,7 +186,8 @@ class Wizard {
       }
     ]);
 
-    configManager.setApiKey(platform, apiKey.trim());
+    // Store API key with optional password for encryption
+    configManager.setApiKey(platform, apiKey.trim(), password || undefined);
     logger.success(i18n.t('auth.saved', { platform }));
     return apiKey.trim();
   }

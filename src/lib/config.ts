@@ -214,6 +214,39 @@ class ConfigManager {
       this.saveConfig();
     }
   }
+
+  // Master password methods
+  hasMasterPassword(): boolean {
+    return !!this.config.master_password_hash;
+  }
+
+  setMasterPassword(password: string): void {
+    // Store a hash of the password for verification
+    const hash = encrypt('master_password_verifier', password);
+    this.config.master_password_hash = hash;
+    this.saveConfig();
+  }
+
+  verifyMasterPassword(password: string): boolean {
+    if (!this.config.master_password_hash) {
+      return false;
+    }
+    try {
+      const verifier = decrypt(this.config.master_password_hash, password);
+      return verifier === 'master_password_verifier';
+    } catch {
+      return false;
+    }
+  }
+
+  getMasterPasswordHash(): string | undefined {
+    return this.config.master_password_hash;
+  }
+
+  clearMasterPassword(): void {
+    delete this.config.master_password_hash;
+    this.saveConfig();
+  }
 }
 
 export const configManager = ConfigManager.getInstance();

@@ -150,7 +150,16 @@
     "validating_api_key": "Validating API Key...",
     "api_key_valid": "API Key is valid",
     "api_key_invalid": "API Key is invalid or expired",
-    "api_key_network_error": "Network error, please check your connection"
+    "api_key_network_error": "Network error, please check your connection",
+    "set_master_password": "Do you want to set a master password to encrypt your API key?",
+    "enter_master_password": "Enter master password:",
+    "confirm_master_password": "Confirm master password:",
+    "password_required": "Password cannot be empty",
+    "password_min_length": "Password must be at least 6 characters",
+    "password_mismatch": "Passwords do not match",
+    "master_password_set": "Master password set successfully",
+    "enter_password_to_decrypt": "Enter master password to decrypt API key:",
+    "wrong_password": "Incorrect master password"
   },
   "doctor": {
     "checking": "Running health check...",
