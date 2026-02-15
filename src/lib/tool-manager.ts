@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { execSync } from 'node:child_process';
 import type { ToolInfo, PlatformId } from '../types/tools.js';
 import type { ToolConfig, PlanType } from '../types/platform.js';
 import { configManager } from './config.js';
 import { platformManager } from './platform-manager.js';
 import { toolRegistry } from './tool-registry.js';
+import { toolInstaller } from './tool-installer.js';
 import { logger } from './logger.js';
 
 const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
@@ -41,38 +41,11 @@ class ToolManager {
   }
 
   isToolInstalled(toolId: string): boolean {
-    const tool = toolRegistry.getTool(toolId);
-    if (!tool) return false;
-
-    try {
-      execSync(tool.command, { stdio: 'ignore' });
-      return true;
-    } catch {
-      return false;
-    }
+    return toolInstaller.isToolInstalled(toolId);
   }
 
   async installTool(toolId: string): Promise<boolean> {
-    const tool = toolRegistry.getTool(toolId);
-    if (!tool) {
-      logger.error(`Tool not found: ${toolId}`);
-      return false;
-    }
-
-    if (this.isToolInstalled(toolId)) {
-      logger.info(`${tool.displayName} is already installed`);
-      return true;
-    }
-
-    try {
-      logger.info(`Installing ${tool.displayName}...`);
-      execSync(tool.installCommand, { stdio: 'inherit' });
-      logger.success(`${tool.displayName} installed successfully`);
-      return true;
-    } catch (error) {
-      logger.error(`Failed to install ${tool.displayName}`);
-      return false;
-    }
+    return toolInstaller.installTool(toolId);
   }
 
   getToolConfig(toolId: string): any | undefined {
@@ -584,16 +557,11 @@ class ToolManager {
   }
 
   getInstalledTools(): string[] {
-    return toolRegistry.getToolIds().filter(id => this.isToolInstalled(id));
+    return toolInstaller.getInstalledTools();
   }
 
   isGitInstalled(): boolean {
-    try {
-      execSync('git --version', { stdio: 'ignore' });
-      return true;
-    } catch {
-      return false;
-    }
+    return toolInstaller.isGitInstalled();
   }
 }
 
