@@ -1,11 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import type { ToolInfo, PlatformId } from '../types/tools.js';
+import type { PlatformId } from '../types/tools.js';
 import type { ToolConfig } from '../types/platform.js';
 import { toolPlatformConfig } from './tool-platform-config.js';
 import { toolRegistry } from './tool-registry.js';
-import { toolInstaller } from './tool-installer.js';
 import { toolConfigManager } from './tool-config-manager.js';
 import { toolBackupManager } from './tool-backup-manager.js';
 import { logger } from './logger.js';
@@ -20,57 +19,6 @@ class ToolManager {
       ToolManager.instance = new ToolManager();
     }
     return ToolManager.instance;
-  }
-
-  getTool(toolId: string): ToolInfo | undefined {
-    return toolRegistry.getTool(toolId);
-  }
-
-  getSupportedTools(): ToolInfo[] {
-    return toolRegistry.getSupportedTools();
-  }
-
-  isToolInstalled(toolId: string): boolean {
-    return toolInstaller.isToolInstalled(toolId);
-  }
-
-  async installTool(toolId: string): Promise<boolean> {
-    return toolInstaller.installTool(toolId);
-  }
-
-  getToolConfig(toolId: string): Record<string, unknown> | undefined {
-    const tool = toolRegistry.getTool(toolId);
-    if (!tool || !tool.configPath) return undefined;
-
-    return toolConfigManager.readToolConfig(tool.configPath) ?? undefined;
-  }
-
-  updateToolConfig(toolId: string, config: Record<string, unknown>): boolean {
-    const tool = toolRegistry.getTool(toolId);
-    if (!tool || !tool.configPath) return false;
-
-    return toolConfigManager.writeToolConfig(tool.configPath, config);
-  }
-
-  private replaceToolConfig(toolId: string, config: Record<string, unknown>): boolean {
-    const tool = toolRegistry.getTool(toolId);
-    if (!tool || !tool.configPath) return false;
-
-    return toolConfigManager.replaceToolConfig(tool.configPath, config);
-  }
-
-  private backupToolConfigIfNeeded(toolId: string): void {
-    const tool = toolRegistry.getTool(toolId);
-    if (!tool || !tool.configPath) return;
-
-    toolBackupManager.backupToolConfig(toolId, tool.configPath);
-  }
-
-  private restoreToolConfigFromBackup(toolId: string): boolean {
-    const tool = toolRegistry.getTool(toolId);
-    if (!tool || !tool.configPath) return false;
-
-    return toolBackupManager.restoreToolConfig(toolId, tool.configPath);
   }
 
   loadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
@@ -90,8 +38,11 @@ class ToolManager {
       case 'claude-code':
       case 'cursor':
       case 'opencode':
-        this.backupToolConfigIfNeeded(toolId);
-        return this.updateToolConfig(toolId, { env: toolConfig.env });
+        if (tool.configPath) {
+          toolBackupManager.backupToolConfig(toolId, tool.configPath);
+          return toolConfigManager.writeToolConfig(tool.configPath, { env: toolConfig.env });
+        }
+        return false;
       case 'factory-droid':
         return this.updateFactoryDroidConfig(toolConfig);
       case 'aider':
@@ -103,8 +54,11 @@ class ToolManager {
       case 'cline':
       case 'roo-code':
       case 'kilo-code':
-        this.backupToolConfigIfNeeded(toolId);
-        return this.updateVSCodeExtensionConfig(toolId, toolConfig);
+        if (tool.configPath) {
+          toolBackupManager.backupToolConfig(toolId, tool.configPath);
+          return this.updateVSCodeExtensionConfig(toolId, toolConfig);
+        }
+        return false;
       default:
         logger.warning(`Load config not implemented for ${tool.name}`);
         return false;
@@ -368,7 +322,10 @@ class ToolManager {
       case 'claude-code':
       case 'cursor':
       case 'opencode':
-        return this.restoreToolConfigFromBackup(toolId);
+        if (tool.configPath) {
+          return toolBackupManager.restoreToolConfig(toolId, tool.configPath);
+        }
+        return false;
       case 'factory-droid':
         return this.removeFactoryDroidModel(defaultModel || '');
       case 'aider':
@@ -460,14 +417,6 @@ class ToolManager {
       logger.error(`Failed to remove Factory Droid model: ${error}`);
       return false;
     }
-  }
-
-  getInstalledTools(): string[] {
-    return toolInstaller.getInstalledTools();
-  }
-
-  isGitInstalled(): boolean {
-    return toolInstaller.isGitInstalled();
   }
 }
 

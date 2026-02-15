@@ -1,6 +1,8 @@
 import type { PlatformId } from '../types/config.js';
 import { configManager } from '../lib/config.js';
 import { toolManager } from '../lib/tool-manager.js';
+import { toolRegistry } from '../lib/tool-registry.js';
+import { toolInstaller } from '../lib/tool-installer.js';
 import { logger } from '../lib/logger.js';
 
 const LOADABLE_TOOLS = [
@@ -24,10 +26,10 @@ function resolvePlatform(platformArg?: string): PlatformId {
 }
 
 export async function handleToolList(): Promise<void> {
-  const tools = toolManager.getSupportedTools();
+  const tools = toolRegistry.getSupportedTools();
   console.log('\nSupported tools:');
   for (const tool of tools) {
-    const installed = toolManager.isToolInstalled(tool.id) ? '✓' : '✗';
+    const installed = toolInstaller.isToolInstalled(tool.id) ? '✓' : '✗';
     const loadable = LOADABLE_TOOLS.includes(tool.id) ? '' : ' (inspect only)';
     console.log(`  ${installed} ${tool.displayName}${loadable}`);
   }
