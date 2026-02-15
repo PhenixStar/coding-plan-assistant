@@ -13,10 +13,14 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # Required for OIDC/Trusted Publisher
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment:
+      name: npm-publish
+      url: https://npmjs.com/package/coding-plan-assistant
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +29,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
@@ -40,5 +43,3 @@ jobs:
             npm version "$VERSION" --no-commit-hooks --allow-same-version
           fi
           npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
