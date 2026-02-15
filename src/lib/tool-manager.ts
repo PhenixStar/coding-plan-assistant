@@ -191,6 +191,74 @@ class ToolManager {
     return `${prefix}_${normalizedKey}`.toUpperCase().replace(/-/g, '_');
   }
 
+  private setupAiderSecureConfig(
+    platformId: PlatformId,
+    toolConfig: ToolConfig,
+    envPrefix: string
+  ): boolean {
+    try {
+      // Store credentials securely using secure-credential-manager
+      const toolId = 'aider';
+
+      // Store API key as secure credential
+      if (toolConfig.apiKey) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'api-key',
+          toolConfig.apiKey,
+          'env'
+        );
+      }
+
+      // Store endpoint as secure credential if provided
+      if (toolConfig.baseUrl) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'endpoint',
+          toolConfig.baseUrl,
+          'env'
+        );
+      }
+
+      // Create wrapper script for the tool
+      secureCredentialManager.createWrapperScript(platformId, toolId);
+
+      // Create config with environment variable references instead of plaintext values
+      const apiKeyEnvVar = this.getSecureEnvVarName(envPrefix, 'API_KEY');
+      const endpointEnvVar = this.getSecureEnvVarName(envPrefix, 'ENDPOINT');
+
+      const configPath = path.join(os.homedir(), '.aider.conf.json');
+      const configDir = path.dirname(configPath);
+
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Update with environment variable references
+      existing['model'] = toolConfig.model;
+      existing['api-key'] = `\${${apiKeyEnvVar}}`;
+      if (toolConfig.baseUrl) {
+        existing['endpoint'] = `\${${endpointEnvVar}}`;
+      }
+
+      fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
+
+      logger.success(`Secure config set up for Aider`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to setup secure config for Aider: ${error}`);
+      return false;
+    }
+  }
+
   private readBackups(): ToolBackups {
     try {
       if (!fs.existsSync(TOOL_BACKUP_FILE)) {
@@ -294,6 +362,14 @@ class ToolManager {
         // Fallback to direct config (legacy behavior)
         return this.updateFactoryDroidConfig(toolConfig);
       case 'aider':
+        this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for Aider
+          return this.setupAiderSecureConfig(platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateAiderConfig(toolConfig);
       case 'copilot':
         return this.updateCopilotConfig(toolConfig);
