@@ -3,23 +3,23 @@
   "spec": "007-command-injection-risk-in-tool-installation",
   "state": "building",
   "subtasks": {
-    "completed": 5,
+    "completed": 6,
     "total": 9,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Fix Tool Manager",
+    "current": "Add Security Tests",
     "id": null,
-    "total": 2
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 6,
+    "number": 7,
     "started_at": "2026-02-16T06:15:46.974211"
   },
-  "last_update": "2026-02-16T06:43:16.185668"
+  "last_update": "2026-02-16T06:46:52.595573"
 }
