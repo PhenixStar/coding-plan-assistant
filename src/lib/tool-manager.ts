@@ -89,6 +89,15 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
     configPath: path.join(os.homedir(), '.config', 'zed', 'settings.json'),
     displayName: 'Zed AI',
     supported: true
+  },
+  'copilot': {
+    id: 'copilot',
+    name: 'GitHub Copilot',
+    command: 'gh copilot --version',
+    installCommand: 'gh extension install github/copilot-cli',
+    configPath: path.join(os.homedir(), '.github-copilot'),
+    displayName: 'GitHub Copilot',
+    supported: true
   }
 };
 

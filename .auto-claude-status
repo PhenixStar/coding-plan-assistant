@@ -3,7 +3,7 @@
   "spec": "001-extended-ai-coding-tool-support",
   "state": "building",
   "subtasks": {
-    "completed": 1,
+    "completed": 3,
     "total": 15,
     "in_progress": 1,
     "failed": 0
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 3,
+    "number": 5,
     "started_at": "2026-02-16T01:09:46.162976"
   },
-  "last_update": "2026-02-16T01:20:55.315373"
+  "last_update": "2026-02-16T01:26:47.429171"
 }
