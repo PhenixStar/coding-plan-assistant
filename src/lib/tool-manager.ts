@@ -134,6 +134,15 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
     configPath: '',
     displayName: 'Bolt.new',
     supported: true
+  },
+  'lovable': {
+    id: 'lovable',
+    name: 'Lovable',
+    command: 'echo "Lovable is browser-based"',
+    installCommand: 'echo "Open https://lovable.dev in your browser"',
+    configPath: '',
+    displayName: 'Lovable',
+    supported: true
   }
 };
 
