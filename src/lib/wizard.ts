@@ -253,12 +253,45 @@ class Wizard {
         await this.configPlan();
         break;
       case 'apikey':
-        await this.configApiKey(configManager.getActivePlatform());
+        await this.configApiKeyWithPassword();
         break;
       case 'tool':
         await this.showToolMenu();
         break;
     }
+  }
+
+  async promptMasterPassword(): Promise<string | undefined> {
+    if (!configManager.hasMasterPassword()) {
+      return undefined;
+    }
+
+    while (true) {
+      const { password } = await inquirer.prompt([
+        {
+          type: 'password',
+          name: 'password',
+          message: i18n.t('wizard.enter_master_password'),
+          validate: (input: string) => {
+            if (!input || input.trim().length === 0) {
+              return i18n.t('wizard.password_required');
+            }
+            return true;
+          }
+        }
+      ]);
+
+      if (configManager.verifyMasterPassword(password)) {
+        return password;
+      } else {
+        logger.error(i18n.t('wizard.invalid_master_password'));
+      }
+    }
+  }
+
+  async configApiKeyWithPassword(): Promise<void> {
+    const password = await this.promptMasterPassword();
+    await this.configApiKey(configManager.getActivePlatform(), password);
   }
 
   async showToolMenu(): Promise<void> {
