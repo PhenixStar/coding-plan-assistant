@@ -47,7 +47,8 @@ class ConfigManager {
     try {
       if (fs.existsSync(CONFIG_FILE)) {
         const content = fs.readFileSync(CONFIG_FILE, 'utf-8');
-        const loaded = yaml.load(content, { schema: yaml.DEFAULT_SAFE_SCHEMA }) as UnifiedConfig;
+        // Use FAILSAFE_SCHEMA to prevent unsafe YAML deserialization (CVE-2023-2251)
+        const loaded = yaml.load(content, { schema: (yaml as any).FAILSAFE_SCHEMA }) as UnifiedConfig;
         this.config = { ...DEFAULT_CONFIG, ...loaded };
       } else {
         this.config = { ...DEFAULT_CONFIG };

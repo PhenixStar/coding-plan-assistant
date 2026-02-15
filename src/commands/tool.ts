@@ -25,11 +25,14 @@ function resolvePlatform(platformArg?: string): PlatformId {
 
 export async function handleToolList(): Promise<void> {
   const tools = toolManager.getSupportedTools();
-  console.log('\nSupported tools:');
+  console.log('\n' + i18n.t('tool.list_title') + ':');
   for (const tool of tools) {
-    const installed = toolManager.isToolInstalled(tool.id) ? '✓' : '✗';
-    const loadable = LOADABLE_TOOLS.includes(tool.id) ? '' : ' (inspect only)';
-    console.log(`  ${installed} ${tool.displayName}${loadable}`);
+    const isInstalled = toolManager.isToolInstalled(tool.id);
+    if (isInstalled) {
+      logger.success('✓ ' + tool.displayName);
+    } else {
+      logger.warning('✗ ' + tool.displayName);
+    }
   }
 }
 
