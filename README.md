@@ -48,7 +48,7 @@ cpa
 
 Run the interactive wizard:
 ```bash
-uchelper init
+cpa init
 ```
 
 The wizard will guide you through:
@@ -64,39 +64,39 @@ The wizard will guide you through:
 
 ```bash
 # Show help
-uchelper -h
-uchelper --help
+cpa -h
+cpa --help
 
 # Show version
-uchelper -v
-uchelper --version
+cpa -v
+cpa --version
 
 # Run initialization wizard
-uchelper init
+cpa init
 
 # Language management
-uchelper lang show              # Display current language
-uchelper lang set <en_US|zh_CN> # Set language
-uchelper lang                    # Interactive language selection
+cpa lang show              # Display current language
+cpa lang set <en_US|zh_CN> # Set language
+cpa lang                    # Interactive language selection
 
 # Platform management
-uchelper platform show           # Display current platform
-uchelper platform set <glm|minimax>  # Set platform
-uchelper platform                # Interactive platform selection
+cpa platform show           # Display current platform
+cpa platform set <glm|minimax>  # Set platform
+cpa platform                # Interactive platform selection
 
 # API key management
-uchelper auth <platform> <token>     # Set API key for platform
-uchelper auth glm <token>          # Set GLM API key
-uchelper auth minimax <token>       # Set MiniMax API key
-uchelper auth reload <tool>        # Reload config to tool
+cpa auth <platform> <token>     # Set API key for platform
+cpa auth glm <token>          # Set GLM API key
+cpa auth minimax <token>       # Set MiniMax API key
+cpa auth reload <tool>        # Reload config to tool
 
 # Tool management
-uchelper tool list               # List supported tools
-uchelper tool load <tool> [platform]   # Load config into tool
-uchelper tool unload <tool> [platform] # Unload config from tool
+cpa tool list               # List supported tools
+cpa tool load <tool> [platform]   # Load config into tool
+cpa tool unload <tool> [platform] # Unload config from tool
 
 # Health check
-uchelper doctor                 # Run health check
+cpa doctor                 # Run health check
 ```
 
 ## Configuration
@@ -226,7 +226,7 @@ Visit: https://platform.minimax.io/docs
 
 Run health check to diagnose issues:
 ```bash
-uchelper doctor
+cpa doctor
 ```
 
 ### Common Issues

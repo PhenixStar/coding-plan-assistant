@@ -4,7 +4,8 @@
   "description": "CLI assistant for GLM and MiniMax AI coding platforms",
   "main": "dist/index.js",
   "bin": {
-    "coding-plan-assistant": "dist/cli.js"
+    "coding-plan-assistant": "dist/cli.js",
+    "cpa": "dist/cli.js"
   },
   "homepage": "https://github.com/PhenixStar/coding-plan-assistant",
   "bugs": {
@@ -23,12 +24,14 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc && cp -r src/locales dist/",
+    "build": "tsc && node -e \"require('fs').cpSync('src/locales', 'dist/locales', { recursive: true })\"",
     "dev": "tsx watch src/cli.ts",
     "start": "node dist/cli.js",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
@@ -58,11 +61,13 @@
     "@types/inquirer": "^9.0.7",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.10.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "nodemon": "^3.1.11",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.4"
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^4.0.18"
   }
 }
