@@ -10,6 +10,7 @@ import { toolConfigManager } from './tool-config-manager.js';
 import { toolBackupManager } from './tool-backup-manager.js';
 import { toolPlatformConfig } from './tool-platform-config.js';
 import { logger } from './logger.js';
+import { secureCredentialManager } from './secure-credential-manager.js';
 
 const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
 const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
@@ -136,6 +137,60 @@ class ToolManager {
     }
   }
 
+  private setupSecureEnvConfig(
+    toolId: string,
+    platformId: PlatformId,
+    toolConfig: ToolConfig,
+    envPrefix: string
+  ): boolean {
+    try {
+      // Store credentials securely using secure-credential-manager
+      const envVars = toolConfig.env || {};
+
+      // Store each env var as a secure credential
+      for (const [key, value] of Object.entries(envVars)) {
+        if (value && typeof value === 'string') {
+          secureCredentialManager.setCredential(
+            platformId,
+            toolId,
+            key,
+            value,
+            'env'
+          );
+        }
+      }
+
+      // Create wrapper script for the tool
+      secureCredentialManager.createWrapperScript(platformId, toolId);
+
+      // Create config with environment variable references instead of plaintext values
+      const envRefConfig: Record<string, string> = {};
+      for (const key of Object.keys(envVars)) {
+        const envVarName = this.getSecureEnvVarName(envPrefix, key);
+        envRefConfig[key] = `\${${envVarName}}`;
+      }
+
+      // Write config with env var references
+      const updated = this.updateToolConfig(toolId, { env: envRefConfig });
+
+      if (updated) {
+        logger.success(`Secure env-based config set up for ${toolId}`);
+      }
+
+      return updated;
+    } catch (error) {
+      logger.error(`Failed to setup secure env config for ${toolId}: ${error}`);
+      return false;
+    }
+  }
+
+  private getSecureEnvVarName(prefix: string, key: string): string {
+    // Convert key like ANTHROPIC_AUTH_TOKEN to ANTHROPIC_AUTH_TOKEN
+    // Remove any existing prefix to avoid duplication
+    const normalizedKey = key.replace(/^ANTHROPIC_/i, '');
+    return `${prefix}_${normalizedKey}`.toUpperCase().replace(/-/g, '_');
+  }
+
   private readBackups(): ToolBackups {
     try {
       if (!fs.existsSync(TOOL_BACKUP_FILE)) {
@@ -211,11 +266,22 @@ class ToolManager {
       return false;
     }
 
+    // Check if secure env-based storage is preferred
+    const useSecureStorage = configManager.getCredentialStorageType() === 'env';
+    const envPrefix = configManager.getCredentialStorageEnvPrefix() || 'ANTHROPIC';
+
     switch (toolId) {
       case 'claude-code':
       case 'cursor':
       case 'opencode':
         this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for env-based storage
+          return this.setupSecureEnvConfig(toolId, platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateToolConfig(toolId, { env: toolConfig.env });
       case 'factory-droid':
         return this.updateFactoryDroidConfig(toolConfig);

@@ -3,23 +3,23 @@
   "spec": "005-api-keys-exposed-in-tool-configuration-files",
   "state": "building",
   "subtasks": {
-    "completed": 2,
+    "completed": 4,
     "total": 13,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Add Secure Credential Storage Infrastructure",
+    "current": "Update Tool Manager for Secure Credentials",
     "id": null,
-    "total": 3
+    "total": 5
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 3,
+    "number": 5,
     "started_at": "2026-02-16T04:52:24.256633"
   },
-  "last_update": "2026-02-16T05:07:47.925899"
+  "last_update": "2026-02-16T05:14:49.761686"
 }
