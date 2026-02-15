@@ -3,7 +3,18 @@ import { configManager } from '../lib/config.js';
 import { toolManager } from '../lib/tool-manager.js';
 import { logger } from '../lib/logger.js';
 
-const LOADABLE_TOOLS = ['claude-code', 'cursor', 'opencode', 'factory-droid'];
+const LOADABLE_TOOLS = [
+  'claude-code',
+  'cursor',
+  'opencode',
+  'factory-droid',
+  'windsurf',
+  'zed-ai',
+  'copilot',
+  'aider',
+  'codeium',
+  'continue'
+];
 
 function resolvePlatform(platformArg?: string): PlatformId {
   if (platformArg === 'glm' || platformArg === 'minimax') {
