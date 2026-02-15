@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process';
+import ora from 'ora';
 import type { PlatformId } from '../types/config.js';
 import { configManager } from '../lib/config.js';
 import { toolManager } from '../lib/tool-manager.js';
@@ -23,16 +24,27 @@ export async function doctor(): Promise<boolean> {
   const platform = configManager.getActivePlatform();
   const apiKey = configManager.getApiKey(platform);
 
-  process.stdout.write('  ' + i18n.t('doctor.check_api_key_network') + '... ');
   if (apiKey) {
-    const isValid = await platformManager.validateApiKey(platform, apiKey);
-    if (isValid) {
-      logger.success(i18n.t('doctor.api_key_network_ok'));
-    } else {
-      logger.error(i18n.t('doctor.api_key_invalid'));
+    const spinner = ora(i18n.t('doctor.check_api_key_network'));
+    spinner.start();
+
+    try {
+      const isValid = await platformManager.validateApiKey(platform, apiKey);
+      spinner.stop();
+
+      if (isValid) {
+        logger.success(i18n.t('doctor.api_key_network_ok'));
+      } else {
+        logger.error(i18n.t('doctor.api_key_invalid'));
+        allPassed = false;
+      }
+    } catch (error) {
+      spinner.stop();
+      logger.error(i18n.t('doctor.network_error'));
       allPassed = false;
     }
   } else {
+    process.stdout.write('  ' + i18n.t('doctor.check_api_key_network') + '... ');
     logger.warning(i18n.t('doctor.api_key_missing'));
     allPassed = false;
   }

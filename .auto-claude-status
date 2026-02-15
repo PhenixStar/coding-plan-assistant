@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "005-api-keys-exposed-in-tool-configuration-files",
-  "state": "building",
+  "spec": "008-add-loading-spinner-for-network-validation-in-doct",
+  "state": "planning",
   "subtasks": {
-    "completed": 13,
-    "total": 13,
-    "in_progress": 0,
+    "completed": 0,
+    "total": 0,
+    "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Add Tests and Verification",
+    "current": "Add Ora spinner to doctor command",
     "id": null,
-    "total": 2
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 13,
-    "started_at": "2026-02-16T04:52:24.256633"
+    "number": 2,
+    "started_at": "2026-02-16T06:15:08.803392"
   },
-  "last_update": "2026-02-16T06:20:00.000000"
+  "last_update": "2026-02-16T06:24:54.820152"
 }
