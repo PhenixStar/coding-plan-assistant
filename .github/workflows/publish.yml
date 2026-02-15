@@ -4,9 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (default: latest from package.json)'
+        description: 'Version to publish (e.g., 1.0.0)'
         required: false
         type: string
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
@@ -22,6 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
@@ -32,10 +36,9 @@ jobs:
       - name: Publish to npm
         run: |
           VERSION="${{ github.event.inputs.version }}"
-          if [ -z "$VERSION" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+          if [ -n "$VERSION" ]; then
+            npm version "$VERSION" --no-commit-hooks --allow-same-version
           fi
-          npm version "$VERSION" --no-commit-hooks --allow-same-version
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
