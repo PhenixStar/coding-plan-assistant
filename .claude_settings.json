@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\002-enhanced-error-handling-and-messages/**)",
+      "Write(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\002-enhanced-error-handling-and-messages/**)",
+      "Edit(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\002-enhanced-error-handling-and-messages/**)",
+      "Glob(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\002-enhanced-error-handling-and-messages/**)",
+      "Grep(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\002-enhanced-error-handling-and-messages/**)",
+      "Read(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\002-enhanced-error-handling-and-messages\\.auto-claude\\specs\\002-enhanced-error-handling-and-messages/**)",
+      "Write(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\002-enhanced-error-handling-and-messages\\.auto-claude\\specs\\002-enhanced-error-handling-and-messages/**)",
+      "Edit(D:\\AI\\coding-helper\\.auto-claude\\worktrees\\tasks\\002-enhanced-error-handling-and-messages\\.auto-claude\\specs\\002-enhanced-error-handling-and-messages/**)",
+      "Read(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Write(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Edit(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Glob(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Grep(D:\\AI\\coding-helper\\.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__query-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
