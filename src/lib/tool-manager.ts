@@ -107,6 +107,15 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
     configPath: path.join(os.homedir(), '.aider.conf.json'),
     displayName: 'Aider',
     supported: true
+  },
+  'codeium': {
+    id: 'codeium',
+    name: 'Codeium',
+    command: 'code --list-extensions | grep -i codeium',
+    installCommand: 'code --install-extension codeium.codeium',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Codeium (VS Code)',
+    supported: true
   }
 };
 
