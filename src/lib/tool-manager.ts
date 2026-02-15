@@ -1,13 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { execFileSync } from 'node:child_process';
-import type { PlatformId } from '../types/tools.js';
-import type { ToolConfig } from '../types/platform.js';
-import { toolPlatformConfig } from './tool-platform-config.js';
-import { toolRegistry } from './tool-registry.js';
-import { toolConfigManager } from './tool-config-manager.js';
-import { toolBackupManager } from './tool-backup-manager.js';
+import { execSync } from 'node:child_process';
+import type { ToolInfo, PlatformId } from '../types/tools.js';
+import type { ToolConfig, PlanType } from '../types/platform.js';
+import { configManager } from './config.js';
+import { platformManager } from './platform-manager.js';
 import { logger } from './logger.js';
 import { secureCredentialManager } from './secure-credential-manager.js';
 
@@ -91,57 +89,81 @@ interface ToolBackups {
   toolConfigs?: Record<string, any>;
 }
 
-// Shell metacharacters that require shell interpretation
-const SHELL_METACHARACTERS = /[;&|`$(){}[\]<>\\!#*?"'\n\r]/;
+const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
+  'claude-code': {
+    id: 'claude-code',
+    name: 'Claude Code',
+    command: 'claude',
+    installCommand: 'npm install -g @anthropic-ai/claude-code',
+    configPath: path.join(os.homedir(), '.claude', 'settings.json'),
+    displayName: 'Claude Code',
+    supported: true
+  },
+  'cursor': {
+    id: 'cursor',
+    name: 'Cursor',
+    command: 'cursor',
+    installCommand: 'cursor --version || echo "Install from https://cursor.sh"',
+    configPath: path.join(os.homedir(), '.cursor', 'settings.json'),
+    displayName: 'Cursor',
+    supported: true
+  },
+  'cline': {
+    id: 'cline',
+    name: 'Cline',
+    command: 'code --list-extensions | grep -i cline',
+    installCommand: 'code --install-extension abc.cline',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Cline (VS Code)',
+    supported: true
+  },
+  'roo-code': {
+    id: 'roo-code',
+    name: 'Roo Code',
+    command: 'code --list-extensions | grep -i "roo code"',
+    installCommand: 'code --install-extension roovetterinc.roo-code',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Roo Code (VS Code)',
+    supported: true
+  },
+  'kilo-code': {
+    id: 'kilo-code',
+    name: 'Kilo Code',
+    command: 'code --list-extensions | grep -i "kilo code"',
+    installCommand: 'code --install-extension kilinc.kilo-code',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Kilo Code (VS Code)',
+    supported: true
+  },
+  'opencode': {
+    id: 'opencode',
+    name: 'OpenCode',
+    command: 'opencode --version',
+    installCommand: 'npm install -g opencode',
+    configPath: path.join(os.homedir(), '.opencode', 'config.json'),
+    displayName: 'OpenCode',
+    supported: true
+  },
+  'factory-droid': {
+    id: 'factory-droid',
+    name: 'Factory Droid',
+    command: 'droid --version',
+    installCommand: 'curl -fsSL https://app.factory.ai/cli | sh',
+    configPath: path.join(os.homedir(), '.factory', 'config.json'),
+    displayName: 'Factory Droid',
+    supported: true
+  }
+};
 
-/**
- * Check if a command contains shell metacharacters
- */
-function hasShellMetacharacters(command: string): boolean {
-  return SHELL_METACHARACTERS.test(command);
+const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
+const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
+
+interface LegacyClaudeBackup {
+  env?: Record<string, string>;
 }
 
-/**
- * Parse a simple command into [program, args]
- * Returns null if command contains shell metacharacters
- */
-function parseSimpleCommand(command: string): { program: string; args: string[] } | null {
-  if (hasShellMetacharacters(command)) {
-    return null;
-  }
-
-  const parts = command.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) {
-    return null;
-  }
-
-  return {
-    program: parts[0],
-    args: parts.slice(1)
-  };
-}
-
-/**
- * Execute a command safely - uses execFileSync for simple commands
- * Returns true if command succeeds, false otherwise
- */
-function safeExecSync(command: string): boolean {
-  try {
-    const parsed = parseSimpleCommand(command);
-
-    if (parsed) {
-      // Safe: execFileSync doesn't use shell, args are passed directly
-      execFileSync(parsed.program, parsed.args, { stdio: 'ignore' });
-    } else {
-      // Shell command detected - reject for safety
-      logger.debug(`Shell command rejected for safety: ${command}`);
-      return false;
-    }
-    return true;
-  } catch (error) {
-    logger.debug(`Safe command execution failed for ${command}: ${(error as Error).message}`);
-    return false;
-  }
+interface ToolBackups {
+  toolConfigs?: Record<string, any>;
 }
 
 class ToolManager {
@@ -168,7 +190,20 @@ class ToolManager {
     const tool = toolRegistry.getTool(toolId);
     if (!tool) return false;
 
-    return safeExecSync(tool.command);
+    try {
+      execSync(tool.command, { stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async installTool(toolId: string): Promise<boolean> {
+    const tool = SUPPORTED_TOOLS[toolId];
+    if (!tool) {
+      logger.error(`Tool not found: ${toolId}`);
+      return false;
+    }
 
     if (this.isToolInstalled(toolId)) {
       logger.info(`${tool.displayName} is already installed`);
@@ -773,14 +808,6 @@ class ToolManager {
         this.backupToolConfigIfNeeded(toolId);
         return this.updateToolConfig(toolId, { env: toolConfig.env });
       case 'factory-droid':
-        this.backupToolConfigIfNeeded(toolId);
-
-        if (useSecureStorage) {
-          // Use secure credential manager for env-based storage
-          return this.setupSecureEnvConfig(toolId, platformId, toolConfig, envPrefix);
-        }
-
-        // Fallback to direct config (legacy behavior)
         return this.updateFactoryDroidConfig(toolConfig);
       default:
         logger.warning(`Load config not implemented for ${tool.name}`);
