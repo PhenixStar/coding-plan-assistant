@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "004-yaml-unsafe-deserialization-in-configuration-loadi",
+  "spec": "005-api-keys-exposed-in-tool-configuration-files",
   "state": "building",
   "subtasks": {
-    "completed": 1,
-    "total": 3,
+    "completed": 2,
+    "total": 13,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Fix YAML Unsafe Deserialization",
+    "current": "Add Secure Credential Storage Infrastructure",
     "id": null,
     "total": 3
   },
@@ -19,7 +19,7 @@
   },
   "session": {
     "number": 3,
-    "started_at": "2026-02-16T06:15:08.803392"
+    "started_at": "2026-02-16T04:52:24.256633"
   },
-  "last_update": "2026-02-16T06:23:57.866646"
+  "last_update": "2026-02-16T05:07:47.925899"
 }
