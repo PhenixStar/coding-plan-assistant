@@ -284,6 +284,14 @@ class ToolManager {
         // Fallback to direct config (legacy behavior)
         return this.updateToolConfig(toolId, { env: toolConfig.env });
       case 'factory-droid':
+        this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for env-based storage
+          return this.setupSecureEnvConfig(toolId, platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateFactoryDroidConfig(toolConfig);
       case 'aider':
         return this.updateAiderConfig(toolConfig);
