@@ -36,6 +36,20 @@
     "minimax": "MiniMax",
     "select": "Select AI platform"
   },
+  "tool": {
+    "list_title": "Supported tools",
+    "load_usage": "uchelper tool load <tool> [glm|minimax] - Load platform config into tool",
+    "unload_usage": "uchelper tool unload <tool> [glm|minimax] - Unload config from tool",
+    "load_not_supported": "Load is not supported for tool: {{tool}}",
+    "unload_not_supported": "Unload is not supported for tool: {{tool}}",
+    "load_success": "Loaded {{platform}} config into {{tool}}",
+    "load_failed": "Failed to load config into {{tool}}",
+    "unload_success": "Unloaded config from {{tool}}",
+    "unload_failed": "Failed to unload config from {{tool}}",
+    "inspect_only": " (inspect only)",
+    "installed": "Installed",
+    "not_installed": "Not installed"
+  },
   "auth": {
     "set_usage": "uchelper auth <platform> <token> <password> - Set API key for platform (password required for encryption)",
     "platform_prompt": "Select platform",
@@ -188,5 +202,115 @@
     "args": "Args:",
     "first_run": "First run detected. Starting initialization wizard...",
     "config_saved": "Configuration saved"
+  },
+  "errors": {
+    "title": "Error",
+    "code": "Error Code",
+    "operation": "Operation",
+    "file": "File",
+    "platform": "Platform",
+    "tool": "Tool",
+    "suggested_actions": "Suggested Actions",
+    "help_hint": "Run 'uchelper doctor' for troubleshooting",
+    "config": {
+      "load_failed": "Failed to load configuration file",
+      "load_failed_hint": "Check if the config file exists and is in valid YAML format",
+      "save_failed": "Failed to save configuration",
+      "save_failed_hint": "Check file permissions in the config directory. Ensure ~/.uchelper exists.",
+      "invalid": "Configuration file is invalid",
+      "invalid_hint": "Please check the configuration file format and values",
+      "dir_create_failed": "Failed to create configuration directory",
+      "dir_create_failed_hint": "Check parent directory permissions"
+    },
+    "platform": {
+      "invalid": "Invalid platform specified",
+      "invalid_hint": "Supported platforms: glm, minimax",
+      "not_configured": "Platform not configured",
+      "not_configured_hint": "Run 'uchelper init' or 'uchelper platform set <platform>' to configure",
+      "api_key_missing": "API key not set for platform",
+      "api_key_missing_hint": "Run 'uchelper auth <platform> <token>' to set your API key",
+      "api_key_invalid": "API key is invalid or expired",
+      "api_key_invalid_hint": "Please update your API key with 'uchelper auth <platform> <token>'",
+      "endpoint_invalid": "Invalid platform endpoint",
+      "endpoint_invalid_hint": "Check platform configuration with 'uchelper platform show'",
+      "auth_failed": "Platform authentication failed",
+      "auth_failed_hint": "Verify your API key is correct and not expired",
+      "request_failed": "Platform request failed",
+      "request_failed_hint": "Check your network connection and try again"
+    },
+    "tool": {
+      "not_found": "Tool not found",
+      "not_found_hint": "Ensure the tool is installed and available in PATH",
+      "not_installed": "Tool is not installed",
+      "not_installed_hint": "Run 'uchelper tool install <tool>' to install",
+      "install_failed": "Failed to install tool",
+      "install_failed_hint": "Check your network connection and tool requirements",
+      "config_failed": "Failed to configure tool",
+      "config_failed_hint": "Check tool configuration and permissions",
+      "validation_failed": "Tool validation failed",
+      "validation_failed_hint": "Check tool installation and configuration",
+      "execution_failed": "Tool execution failed",
+      "execution_failed_hint": "Check tool logs for more details"
+    },
+    "mcp": {
+      "server_not_found": "MCP server not found",
+      "server_not_found_hint": "Check MCP server configuration",
+      "server_start_failed": "Failed to start MCP server",
+      "server_start_failed_hint": "Check MCP server logs for more details",
+      "server_stop_failed": "Failed to stop MCP server",
+      "server_stop_failed_hint": "Check MCP server configuration and try again",
+      "config_invalid": "Invalid MCP configuration",
+      "config_invalid_hint": "Check MCP configuration file format",
+      "connection_failed": "Failed to connect to MCP server",
+      "connection_failed_hint": "Ensure the MCP server is running",
+      "timeout": "MCP server connection timed out",
+      "timeout_hint": "Check network connection and server status"
+    },
+    "auth": {
+      "failed": "Authentication failed",
+      "failed_hint": "Verify your credentials are correct",
+      "token_invalid": "Authentication token is invalid",
+      "token_invalid_hint": "Please re-authenticate with 'uchelper auth'",
+      "token_expired": "Authentication token has expired",
+      "token_expired_hint": "Please re-authenticate with 'uchelper auth'",
+      "insufficient_permissions": "Insufficient permissions",
+      "insufficient_permissions_hint": "Contact your administrator for access"
+    },
+    "file": {
+      "not_found": "File not found",
+      "not_found_hint": "Check if the file path is correct",
+      "read_failed": "Failed to read file",
+      "read_failed_hint": "Check file permissions and path",
+      "write_failed": "Failed to write file",
+      "write_failed_hint": "Check file permissions and disk space",
+      "permission_denied": "Permission denied",
+      "permission_denied_hint": "Check file or directory permissions",
+      "directory_not_found": "Directory not found",
+      "directory_not_found_hint": "Check if the directory path is correct"
+    },
+    "validation": {
+      "failed": "Validation failed",
+      "failed_hint": "Please check your input and try again",
+      "invalid_input": "Invalid input provided",
+      "invalid_input_hint": "Please provide valid input",
+      "missing_field": "Required field is missing",
+      "missing_field_hint": "Please provide all required fields"
+    },
+    "internal": {
+      "error": "An internal error occurred",
+      "error_hint": "Please try again. If the problem persists, report this issue.",
+      "not_implemented": "This feature is not yet implemented",
+      "not_implemented_hint": "This feature will be available in a future version",
+      "unexpected_state": "An unexpected state occurred",
+      "unexpected_state_hint": "Please try again. If the problem persists, report this issue."
+    },
+    "network": {
+      "error": "Network error occurred",
+      "error_hint": "Check your internet connection",
+      "timeout": "Network request timed out",
+      "timeout_hint": "Check your connection and try again",
+      "offline": "You appear to be offline",
+      "offline_hint": "Check your internet connection"
+    }
   }
 }

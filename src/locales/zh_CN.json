@@ -188,5 +188,115 @@
     "args": "参数:",
     "first_run": "首次运行检测到。正在启动初始化向导...",
     "config_saved": "配置已保存"
+  },
+  "errors": {
+    "title": "错误",
+    "code": "错误代码",
+    "operation": "操作",
+    "file": "文件",
+    "platform": "平台",
+    "tool": "工具",
+    "suggested_actions": "建议操作",
+    "help_hint": "运行 'uchelper doctor' 进行故障排查",
+    "config": {
+      "load_failed": "加载配置文件失败",
+      "load_failed_hint": "请检查配置文件是否存在且格式正确",
+      "save_failed": "保存配置失败",
+      "save_failed_hint": "请检查配置目录的权限，确保 ~/.uchelper 目录存在",
+      "invalid": "配置文件无效",
+      "invalid_hint": "请检查配置文件的格式和值",
+      "dir_create_failed": "创建配置目录失败",
+      "dir_create_failed_hint": "请检查父目录的权限"
+    },
+    "platform": {
+      "invalid": "指定的平台无效",
+      "invalid_hint": "支持的平台: glm, minimax",
+      "not_configured": "平台未配置",
+      "not_configured_hint": "运行 'uchelper init' 或 'uchelper platform set <平台>' 进行配置",
+      "api_key_missing": "未设置平台的 API 密钥",
+      "api_key_missing_hint": "运行 'uchelper auth <平台> <密钥>' 来设置您的 API 密钥",
+      "api_key_invalid": "API 密钥无效或已过期",
+      "api_key_invalid_hint": "请使用 'uchelper auth <平台> <密钥>' 更新您的 API 密钥",
+      "endpoint_invalid": "平台端点无效",
+      "endpoint_invalid_hint": "使用 'uchelper platform show' 检查平台配置",
+      "auth_failed": "平台认证失败",
+      "auth_failed_hint": "请验证您的 API 密钥是否正确且未过期",
+      "request_failed": "平台请求失败",
+      "request_failed_hint": "请检查您的网络连接并重试"
+    },
+    "tool": {
+      "not_found": "未找到工具",
+      "not_found_hint": "请确保工具已安装并在 PATH 中可用",
+      "not_installed": "工具未安装",
+      "not_installed_hint": "运行 'uchelper tool install <工具>' 进行安装",
+      "install_failed": "安装工具失败",
+      "install_failed_hint": "请检查您的网络连接和工具要求",
+      "config_failed": "配置工具失败",
+      "config_failed_hint": "请检查工具配置和权限",
+      "validation_failed": "工具验证失败",
+      "validation_failed_hint": "请检查工具安装和配置",
+      "execution_failed": "执行工具失败",
+      "execution_failed_hint": "请查看工具日志获取更多详情"
+    },
+    "mcp": {
+      "server_not_found": "未找到 MCP 服务器",
+      "server_not_found_hint": "请检查 MCP 服务器配置",
+      "server_start_failed": "启动 MCP 服务器失败",
+      "server_start_failed_hint": "请查看 MCP 服务器日志获取更多详情",
+      "server_stop_failed": "停止 MCP 服务器失败",
+      "server_stop_failed_hint": "请检查 MCP 服务器配置并重试",
+      "config_invalid": "MCP 配置无效",
+      "config_invalid_hint": "请检查 MCP 配置文件格式",
+      "connection_failed": "连接 MCP 服务器失败",
+      "connection_failed_hint": "请确保 MCP 服务器正在运行",
+      "timeout": "MCP 服务器连接超时",
+      "timeout_hint": "请检查网络连接和服务器状态"
+    },
+    "auth": {
+      "failed": "认证失败",
+      "failed_hint": "请验证您的凭据是否正确",
+      "token_invalid": "认证令牌无效",
+      "token_invalid_hint": "请使用 'uchelper auth' 重新认证",
+      "token_expired": "认证令牌已过期",
+      "token_expired_hint": "请使用 'uchelper auth' 重新认证",
+      "insufficient_permissions": "权限不足",
+      "insufficient_permissions_hint": "请联系管理员获取访问权限"
+    },
+    "file": {
+      "not_found": "文件未找到",
+      "not_found_hint": "请检查文件路径是否正确",
+      "read_failed": "读取文件失败",
+      "read_failed_hint": "请检查文件权限和路径",
+      "write_failed": "写入文件失败",
+      "write_failed_hint": "请检查文件权限和磁盘空间",
+      "permission_denied": "权限被拒绝",
+      "permission_denied_hint": "请检查文件或目录权限",
+      "directory_not_found": "目录未找到",
+      "directory_not_found_hint": "请检查目录路径是否正确"
+    },
+    "validation": {
+      "failed": "验证失败",
+      "failed_hint": "请检查您的输入并重试",
+      "invalid_input": "提供的输入无效",
+      "invalid_input_hint": "请提供有效的输入",
+      "missing_field": "缺少必填字段",
+      "missing_field_hint": "请提供所有必填字段"
+    },
+    "internal": {
+      "error": "发生内部错误",
+      "error_hint": "请重试。如果问题仍然存在，请报告此问题。",
+      "not_implemented": "此功能尚未实现",
+      "not_implemented_hint": "此功能将在未来版本中可用",
+      "unexpected_state": "发生意外状态",
+      "unexpected_state_hint": "请重试。如果问题仍然存在，请报告此问题。"
+    },
+    "network": {
+      "error": "发生网络错误",
+      "error_hint": "请检查您的网络连接",
+      "timeout": "网络请求超时",
+      "timeout_hint": "请检查您的连接并重试",
+      "offline": "您似乎处于离线状态",
+      "offline_hint": "请检查您的网络连接"
+    }
   }
 }

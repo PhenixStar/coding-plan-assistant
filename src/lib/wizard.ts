@@ -5,6 +5,9 @@ import type { ToolInfo } from '../types/tools.js';
 import { configManager } from './config.js';
 import { platformManager } from './platform-manager.js';
 import { toolManager } from './tool-manager.js';
+import { toolRegistry } from './tool-registry.js';
+import { toolInstaller } from './tool-installer.js';
+import { toolConfigManager } from './tool-config-manager.js';
 import { mcpManager } from './mcp-manager.js';
 import { logger } from './logger.js';
 import { i18n } from './i18n.js';
@@ -197,14 +200,14 @@ class Wizard {
   }
 
   async selectTool(): Promise<string> {
-    const tools = toolManager.getSupportedTools();
+    const tools = toolRegistry.getSupportedTools();
     const { tool } = await inquirer.prompt([
       {
         type: 'list',
         name: 'tool',
         message: i18n.t('wizard.select_tool'),
         choices: tools.map(t => ({
-          name: `${t.displayName} ${toolManager.isToolInstalled(t.id) ? '(✓)' : ''}`,
+          name: `${t.displayName} ${toolInstaller.isToolInstalled(t.id) ? '(✓)' : ''}`,
           value: t.id
         }))
       }
@@ -300,7 +303,7 @@ class Wizard {
 
   async showToolMenu(): Promise<void> {
     const toolId = await this.selectTool();
-    const tool = toolManager.getTool(toolId);
+    const tool = toolRegistry.getTool(toolId);
     if (!tool) return;
 
     const platform = configManager.getActivePlatform();
@@ -338,7 +341,13 @@ class Wizard {
   }
 
   showCurrentConfig(toolId: string): void {
-    const config = toolManager.getToolConfig(toolId);
+    const tool = toolRegistry.getTool(toolId);
+    if (!tool || !tool.configPath) {
+      console.log('\n' + i18n.t('wizard.current_config') + ':');
+      console.log('{}');
+      return;
+    }
+    const config = toolConfigManager.readToolConfig(tool.configPath);
     console.log('\n' + i18n.t('wizard.current_config') + ':');
     console.log(JSON.stringify(config, null, 2));
   }

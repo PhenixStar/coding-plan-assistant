@@ -100,6 +100,8 @@ class McpManager {
       ...COMMON_MCP_SERVICES
     ];
 
+    logger.debug(`Getting MCP services, filter: ${platformFilter ?? 'none'}, total services: ${allServices.length}`);
+
     return allServices
       .filter(s => !platformFilter || s.platform === undefined || s.platform === platformFilter)
       .map(s => this.mapServiceInfo(s));
@@ -109,6 +111,8 @@ class McpManager {
     const installed = this.isServiceInstalled(service.id);
     const pluginPath = path.join(os.homedir(), '.claude', 'skills', service.id);
     const enabled = installed && fs.existsSync(pluginPath);
+
+    logger.debug(`Mapping MCP service info: ${service.id}, installed: ${installed}, enabled: ${enabled}, pluginPath: ${pluginPath}`);
 
     return {
       id: service.id,
@@ -125,8 +129,14 @@ class McpManager {
     const allServices = [...GLM_MCP_SERVICES, ...MINIMAX_MCP_SERVICES, ...COMMON_MCP_SERVICES];
     const service = allServices.find(s => s.id === serviceId);
 
-    if (!service) return false;
-    return fs.existsSync(service.path);
+    if (!service) {
+      logger.debug(`MCP service lookup: ${serviceId} not found in service registry`);
+      return false;
+    }
+
+    const installed = fs.existsSync(service.path);
+    logger.debug(`MCP service installation check: ${serviceId}, path: ${service.path}, installed: ${installed}`);
+    return installed;
   }
 
   async installService(serviceId: string): Promise<boolean> {
@@ -134,7 +144,9 @@ class McpManager {
     const service = allServices.find(s => s.id === serviceId);
 
     if (!service) {
+      const availableServices = allServices.map(s => s.id).join(', ');
       logger.error(`MCP service not found: ${serviceId}`);
+      logger.debug(`MCP service lookup failed: ${serviceId}, available services: ${availableServices}`);
       return false;
     }
 
@@ -143,6 +155,7 @@ class McpManager {
 
       // Create directory if needed
       if (!fs.existsSync(service.path)) {
+        logger.debug(`Creating MCP service directory: ${service.path}`);
         fs.mkdirSync(service.path, { recursive: true });
       }
 
@@ -150,11 +163,13 @@ class McpManager {
       if (service.category === 'glm' || service.category === 'common') {
         const pluginPath = path.join(os.homedir(), '.claude', 'skills', service.id);
         if (!fs.existsSync(pluginPath)) {
+          logger.debug(`Creating MCP plugin directory: ${pluginPath}`);
           fs.mkdirSync(pluginPath, { recursive: true });
         }
 
         const pluginJson = path.join(pluginPath, '.claude-plugin', 'plugin.json');
         if (!fs.existsSync(pluginJson)) {
+          logger.debug(`Creating MCP plugin config: ${pluginJson}`);
           fs.mkdirSync(path.dirname(pluginJson), { recursive: true });
           fs.writeFileSync(
             pluginJson,
@@ -172,7 +187,9 @@ class McpManager {
       logger.success(`${service.name} installed successfully`);
       return true;
     } catch (error) {
-      logger.error(`Failed to install ${service.name}: ${error}`);
+      const errorMessage = (error as Error).message;
+      logger.error(`Failed to install ${service.name}`);
+      logger.debug(`MCP service installation failed: ${serviceId}, service: ${service.name}, path: ${service.path}, error: ${errorMessage}`);
       return false;
     }
   }
@@ -182,7 +199,9 @@ class McpManager {
     const service = allServices.find(s => s.id === serviceId);
 
     if (!service) {
+      const availableServices = allServices.map(s => s.id).join(', ');
       logger.error(`MCP service not found: ${serviceId}`);
+      logger.debug(`MCP service lookup failed: ${serviceId}, available services: ${availableServices}`);
       return false;
     }
 
@@ -191,19 +210,27 @@ class McpManager {
 
       // Remove service directory
       if (fs.existsSync(service.path)) {
+        logger.debug(`Removing MCP service directory: ${service.path}`);
         fs.rmSync(service.path, { recursive: true, force: true });
+      } else {
+        logger.debug(`MCP service directory not found (may already be removed): ${service.path}`);
       }
 
       // Remove plugin directory if exists
       const pluginPath = path.join(os.homedir(), '.claude', 'skills', service.id);
       if (fs.existsSync(pluginPath)) {
+        logger.debug(`Removing MCP plugin directory: ${pluginPath}`);
         fs.rmSync(pluginPath, { recursive: true, force: true });
+      } else {
+        logger.debug(`MCP plugin directory not found (may already be removed): ${pluginPath}`);
       }
 
       logger.success(`${service.name} uninstalled successfully`);
       return true;
     } catch (error) {
-      logger.error(`Failed to uninstall ${service.name}: ${error}`);
+      const errorMessage = (error as Error).message;
+      logger.error(`Failed to uninstall ${service.name}`);
+      logger.debug(`MCP service uninstallation failed: ${serviceId}, service: ${service.name}, path: ${service.path}, error: ${errorMessage}`);
       return false;
     }
   }

@@ -3,6 +3,7 @@ import type { PlatformId } from '../types/config.js';
 import { configManager } from '../lib/config.js';
 import { platformManager } from '../lib/platform-manager.js';
 import { toolManager } from '../lib/tool-manager.js';
+import { toolRegistry } from '../lib/tool-registry.js';
 import { logger } from '../lib/logger.js';
 import { i18n } from '../lib/i18n.js';
 
@@ -52,7 +53,7 @@ export async function handleReload(args: string[]): Promise<void> {
     return;
   }
 
-  const tool = toolManager.getTool(toolId);
+  const tool = toolRegistry.getTool(toolId);
   if (!tool) {
     logger.error(i18n.t('doctor.tool_not_found', { tool: toolId }));
     return;
