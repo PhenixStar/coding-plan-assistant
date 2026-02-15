@@ -112,7 +112,8 @@ class ToolManager {
     try {
       execSync(tool.command, { stdio: 'ignore' });
       return true;
-    } catch {
+    } catch (error) {
+      logger.debug(`Tool installation check failed for ${toolId}: ${(error as Error).message}`);
       return false;
     }
   }
@@ -135,7 +136,9 @@ class ToolManager {
       logger.success(`${tool.displayName} installed successfully`);
       return true;
     } catch (error) {
+      const errorMessage = (error as Error).message;
       logger.error(`Failed to install ${tool.displayName}`);
+      logger.debug(`Tool installation failed for ${toolId}: ${errorMessage}, command: ${tool.installCommand}`);
       return false;
     }
   }
@@ -150,7 +153,9 @@ class ToolManager {
         return JSON.parse(content);
       }
     } catch (error) {
+      const errorMessage = (error as Error).message;
       logger.warning(`Failed to read config for ${tool.name}`);
+      logger.debug(`Tool config read failed for ${toolId}, path: ${tool.configPath}, error: ${errorMessage}`);
     }
     return undefined;
   }
@@ -175,7 +180,9 @@ class ToolManager {
       fs.writeFileSync(tool.configPath, JSON.stringify(merged, null, 2));
       return true;
     } catch (error) {
-      logger.error(`Failed to update config for ${tool.name}: ${error}`);
+      const errorMessage = (error as Error).message;
+      logger.error(`Failed to update config for ${tool.name}`);
+      logger.debug(`Tool config update failed for ${toolId}, path: ${tool.configPath}, error: ${errorMessage}`);
       return false;
     }
   }
@@ -193,7 +200,9 @@ class ToolManager {
       fs.writeFileSync(tool.configPath, JSON.stringify(config, null, 2));
       return true;
     } catch (error) {
-      logger.error(`Failed to replace config for ${tool.name}: ${error}`);
+      const errorMessage = (error as Error).message;
+      logger.error(`Failed to replace config for ${tool.name}`);
+      logger.debug(`Tool config replace failed for ${toolId}, path: ${tool.configPath}, error: ${errorMessage}`);
       return false;
     }
   }
@@ -205,7 +214,9 @@ class ToolManager {
       }
       const content = fs.readFileSync(TOOL_BACKUP_FILE, 'utf-8');
       return JSON.parse(content) as ToolBackups;
-    } catch {
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      logger.debug(`Failed to read tool backups, path: ${TOOL_BACKUP_FILE}, error: ${errorMessage}`);
       return {};
     }
   }
@@ -254,6 +265,7 @@ class ToolManager {
     const tool = SUPPORTED_TOOLS[toolId];
     if (!tool) {
       logger.error(`Tool not found: ${toolId}`);
+      logger.debug(`Attempted to load config for unknown tool: ${toolId}, platform: ${platformId}`);
       return false;
     }
 
@@ -263,12 +275,14 @@ class ToolManager {
 
     if (!apiKey) {
       logger.error(`API key not set for ${platformId}`);
+      logger.debug(`Cannot load tool config: API key missing for platform ${platformId}, tool: ${toolId}`);
       return false;
     }
 
     const toolConfig = platformManager.getToolConfig(platformId, plan, apiKey, endpoint || '');
     if (!toolConfig) {
       logger.error(`Failed to get tool config for ${platformId}`);
+      logger.debug(`Tool config retrieval failed for tool: ${toolId}, platform: ${platformId}, plan: ${plan}`);
       return false;
     }
 
@@ -324,7 +338,10 @@ class ToolManager {
       fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
       return true;
     } catch (error) {
-      logger.error(`Failed to update Factory Droid config: ${error}`);
+      const errorMessage = (error as Error).message;
+      const configPath = path.join(os.homedir(), '.factory', 'config.json');
+      logger.error(`Failed to update Factory Droid config`);
+      logger.debug(`Factory Droid config update failed, path: ${configPath}, model: ${toolConfig.model}, error: ${errorMessage}`);
       return false;
     }
   }
@@ -344,6 +361,8 @@ class ToolManager {
       case 'factory-droid':
         return this.removeFactoryDroidModel(toolConfig?.model || '');
       default:
+        logger.warning(`Unload config not implemented for ${tool.name}`);
+        logger.debug(`Unload config not supported for tool: ${toolId}, platform: ${platformId}`);
         return false;
     }
   }
@@ -363,7 +382,9 @@ class ToolManager {
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
       return true;
     } catch (error) {
-      logger.error(`Failed to remove Factory Droid model: ${error}`);
+      const errorMessage = (error as Error).message;
+      logger.error(`Failed to remove Factory Droid model`);
+      logger.debug(`Factory Droid model removal failed, model: ${model}, error: ${errorMessage}`);
       return false;
     }
   }
