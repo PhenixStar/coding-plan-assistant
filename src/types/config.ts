@@ -1,9 +1,12 @@
+import type { EncryptedData } from './crypto.js';
+
 export type PlatformId = 'glm' | 'minimax';
 export type PlanType = 'global' | 'china';
 export type Language = 'en_US' | 'zh_CN';
 
 export interface PlatformConfig {
   api_key?: string;
+  encrypted_api_key?: EncryptedData;
   endpoint?: string;
   plan?: PlanType;
 }
