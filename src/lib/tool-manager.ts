@@ -80,6 +80,15 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
     configPath: path.join(os.homedir(), '.windsurf', 'config.json'),
     displayName: 'Windsurf',
     supported: true
+  },
+  'zed-ai': {
+    id: 'zed-ai',
+    name: 'Zed AI',
+    command: 'zed --version',
+    installCommand: 'curl -fsSL https://zed.dev/install | sh',
+    configPath: path.join(os.homedir(), '.config', 'zed', 'settings.json'),
+    displayName: 'Zed AI',
+    supported: true
   }
 };
 
