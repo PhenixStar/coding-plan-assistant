@@ -340,6 +340,113 @@ class ToolManager {
     }
   }
 
+  private setupVSCodeExtensionSecureConfig(
+    toolId: string,
+    platformId: PlatformId,
+    toolConfig: ToolConfig,
+    envPrefix: string
+  ): boolean {
+    try {
+      // Store API key securely using secure-credential-manager
+      if (toolConfig.apiKey) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'api-key',
+          toolConfig.apiKey,
+          'env'
+        );
+      }
+
+      // Store base URL as secure credential if provided
+      if (toolConfig.baseUrl) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'base-url',
+          toolConfig.baseUrl,
+          'env'
+        );
+      }
+
+      // Create wrapper script for the tool
+      secureCredentialManager.createWrapperScript(platformId, toolId);
+
+      // Create config with environment variable references instead of plaintext values
+      const apiKeyEnvVar = this.getSecureEnvVarName(envPrefix, 'API_KEY');
+      const baseUrlEnvVar = this.getSecureEnvVarName(envPrefix, 'BASE_URL');
+
+      const vscodeSettingsPath = this.getVSCodeSettingsPath();
+      if (!vscodeSettingsPath) {
+        logger.error('Could not find VS Code settings path');
+        return false;
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(vscodeSettingsPath)) {
+        const content = fs.readFileSync(vscodeSettingsPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Get extension-specific config keys and use env var references
+      const extensionConfig = this.getExtensionConfigWithEnvRefs(toolId, toolConfig, apiKeyEnvVar, baseUrlEnvVar);
+
+      // Merge with existing settings
+      const merged = { ...existing, ...extensionConfig };
+      fs.writeFileSync(vscodeSettingsPath, JSON.stringify(merged, null, 2));
+
+      logger.success(`Secure config set up for ${SUPPORTED_TOOLS[toolId]?.displayName || toolId}`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to setup secure config for VSCode extension ${toolId}: ${error}`);
+      return false;
+    }
+  }
+
+  private getExtensionConfigWithEnvRefs(
+    toolId: string,
+    toolConfig: ToolConfig,
+    apiKeyEnvVar: string,
+    baseUrlEnvVar: string
+  ): any {
+    switch (toolId) {
+      case 'codeium':
+        return {
+          'codeium.enable': true,
+          'codeium.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'codeium.model': toolConfig.model
+        };
+      case 'continue':
+        return {
+          'continue.enable': true,
+          'continue.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'continue.model': toolConfig.model,
+          'continue.baseUrl': toolConfig.baseUrl ? `\${env:${baseUrlEnvVar}}` : 'https://api.anthropic.com'
+        };
+      case 'cline':
+        return {
+          'cline.enable': true,
+          'cline.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'cline.model': toolConfig.model,
+          'cline.apiUrl': toolConfig.baseUrl ? `\${env:${baseUrlEnvVar}}` : 'https://api.anthropic.com'
+        };
+      case 'roo-code':
+        return {
+          'rooCode.enable': true,
+          'rooCode.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'rooCode.model': toolConfig.model
+        };
+      case 'kilo-code':
+        return {
+          'kiloCode.enable': true,
+          'kiloCode.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'kiloCode.model': toolConfig.model
+        };
+      default:
+        return {};
+    }
+  }
+
   private readBackups(): ToolBackups {
     try {
       if (!fs.existsSync(TOOL_BACKUP_FILE)) {
@@ -468,6 +575,13 @@ class ToolManager {
       case 'roo-code':
       case 'kilo-code':
         this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for VSCode extensions
+          return this.setupVSCodeExtensionSecureConfig(toolId, platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateVSCodeExtensionConfig(toolId, toolConfig);
       default:
         logger.warning(`Load config not implemented for ${tool.name}`);
