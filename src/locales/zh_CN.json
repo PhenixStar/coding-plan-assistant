@@ -72,6 +72,8 @@
     "secure_storage_info": "已启用安全凭据存储。",
     "secure_storage_hint": "您的 API 密钥已安全存储，在使用工具时将通过环境变量加载。",
     "config_plaintext_warning": "警告: API 密钥以明文形式存储在工具配置文件中。",
+    "tool_no_secure_storage_warning": "警告: 此工具不支持安全的环境变量存储。API 密钥将以明文形式存储。",
+    "tool_plaintext_only_warning": "警告: 此工具需要明文配置。您的 API 密钥将存储在工具的配置文件中。请考虑使用支持安全存储的工具。",
     "input_api_key": "输入 API 密钥",
     "input_your_api_key": "请在此输入您的 API 密钥，按 Enter 确认:",
     "update_api_key": "更新 API 密钥",

@@ -377,6 +377,7 @@ class Wizard {
 
   async loadConfig(toolId: string, platform: PlatformId): Promise<void> {
     const useSecureStorage = configManager.getCredentialStorageType() === 'env';
+    const supportsSecureStorage = toolManager.supportsSecureStorage(toolId);
     const spinner = ora(i18n.t('wizard.loading_config'));
     spinner.start();
 
@@ -389,9 +390,20 @@ class Wizard {
 
         // Show secure storage info if enabled
         if (useSecureStorage) {
-          this.showSecureStorageInfo(toolId, platform);
+          if (supportsSecureStorage) {
+            this.showSecureStorageInfo(toolId, platform);
+          } else {
+            // Tool doesn't support secure storage - warn user
+            logger.warning(i18n.t('wizard.tool_no_secure_storage_warning'));
+          }
         } else {
-          logger.warning(i18n.t('wizard.config_plaintext_warning'));
+          // Plaintext storage is used
+          if (supportsSecureStorage) {
+            logger.warning(i18n.t('wizard.config_plaintext_warning'));
+          } else {
+            // Tool must use plaintext - stronger warning
+            logger.warning(i18n.t('wizard.tool_plaintext_only_warning'));
+          }
         }
       } else {
         logger.error(i18n.t('wizard.config_failed'));

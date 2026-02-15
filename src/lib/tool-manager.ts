@@ -950,6 +950,48 @@ class ToolManager {
       return false;
     }
   }
+
+  getInstalledTools(): string[] {
+    return Object.keys(SUPPORTED_TOOLS).filter(id => this.isToolInstalled(id));
+  }
+
+  /**
+   * Check if a tool supports secure env-based credential storage.
+   * Tools that don't support this must use plaintext config files.
+   */
+  supportsSecureStorage(toolId: string): boolean {
+    // Tools with secure storage implementations
+    const secureTools = [
+      'claude-code',
+      'cursor',
+      'opencode',
+      'factory-droid',
+      'aider',
+      'copilot',
+      'codeium',
+      'continue',
+      'cline',
+      'roo-code',
+      'kilo-code'
+    ];
+    return secureTools.includes(toolId);
+  }
+
+  /**
+   * Get list of tools that must use plaintext config (no secure storage support)
+   */
+  getPlaintextOnlyTools(): ToolInfo[] {
+    return this.getSupportedTools().filter(tool => !this.supportsSecureStorage(tool.id));
+  }
+
+  isGitInstalled(): boolean {
+    try {
+      execSync('git --version', { stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 export const toolManager = ToolManager.getInstance();
