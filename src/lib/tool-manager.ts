@@ -98,6 +98,15 @@ const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
     configPath: path.join(os.homedir(), '.github-copilot'),
     displayName: 'GitHub Copilot',
     supported: true
+  },
+  'aider': {
+    id: 'aider',
+    name: 'Aider',
+    command: 'aider --version',
+    installCommand: 'pip install aider',
+    configPath: path.join(os.homedir(), '.aider.conf.json'),
+    displayName: 'Aider',
+    supported: true
   }
 };
 
