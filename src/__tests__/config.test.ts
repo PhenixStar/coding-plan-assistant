@@ -100,11 +100,19 @@ describe('Supported Tools', () => {
     'Roo Code',
     'Kilo Code',
     'OpenCode',
-    'Factory Droid'
+    'Factory Droid',
+    'Windsurf',
+    'Zed AI',
+    'GitHub Copilot',
+    'Aider',
+    'Codeium',
+    'Continue',
+    'Bolt.new',
+    'Lovable'
   ];
 
-  it('should have at least 5 supported tools', () => {
-    expect(supportedTools.length).toBeGreaterThanOrEqual(5);
+  it('should have at least 10 supported tools', () => {
+    expect(supportedTools.length).toBeGreaterThanOrEqual(10);
   });
 
   it('should include Claude Code in supported tools', () => {
@@ -113,5 +121,21 @@ describe('Supported Tools', () => {
 
   it('should include Factory Droid in supported tools', () => {
     expect(supportedTools).toContain('Factory Droid');
+  });
+
+  it('should include Windsurf in supported tools', () => {
+    expect(supportedTools).toContain('Windsurf');
+  });
+
+  it('should include Zed AI in supported tools', () => {
+    expect(supportedTools).toContain('Zed AI');
+  });
+
+  it('should include GitHub Copilot in supported tools', () => {
+    expect(supportedTools).toContain('GitHub Copilot');
+  });
+
+  it('should include Bolt.new in supported tools', () => {
+    expect(supportedTools).toContain('Bolt.new');
   });
 });

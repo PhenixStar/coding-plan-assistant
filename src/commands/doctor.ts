@@ -2,6 +2,8 @@ import { execSync } from 'node:child_process';
 import type { PlatformId } from '../types/config.js';
 import { configManager } from '../lib/config.js';
 import { toolManager } from '../lib/tool-manager.js';
+import { toolRegistry } from '../lib/tool-registry.js';
+import { toolInstaller } from '../lib/tool-installer.js';
 import { platformManager } from '../lib/platform-manager.js';
 import { logger } from '../lib/logger.js';
 import { i18n } from '../lib/i18n.js';
@@ -46,7 +48,7 @@ export async function doctor(): Promise<boolean> {
 
   // Check Git
   process.stdout.write('  ' + i18n.t('doctor.check_git_env') + '... ');
-  if (toolManager.isGitInstalled()) {
+  if (toolInstaller.isGitInstalled()) {
     logger.success('✓');
   } else {
     logger.warning(i18n.t('doctor.git_not_installed'));
@@ -54,9 +56,9 @@ export async function doctor(): Promise<boolean> {
 
   // Check tools
   console.log('\n' + i18n.t('doctor.check_tools') + ':');
-  const tools = toolManager.getSupportedTools();
+  const tools = toolRegistry.getSupportedTools();
   for (const tool of tools) {
-    const installed = toolManager.isToolInstalled(tool.id);
+    const installed = toolInstaller.isToolInstalled(tool.id);
     const status = installed ? logger.success('✓ ' + i18n.t('doctor.tool_installed')) : logger.warning(' ' + i18n.t('doctor.tool_not_found', { tool: tool.name }));
   }
 

@@ -1,10 +1,23 @@
 import type { PlatformId } from '../types/config.js';
 import { configManager } from '../lib/config.js';
 import { toolManager } from '../lib/tool-manager.js';
+import { toolRegistry } from '../lib/tool-registry.js';
+import { toolInstaller } from '../lib/tool-installer.js';
 import { logger } from '../lib/logger.js';
 import { i18n } from '../lib/i18n.js';
 
-const LOADABLE_TOOLS = ['claude-code', 'cursor', 'opencode', 'factory-droid'];
+const LOADABLE_TOOLS = [
+  'claude-code',
+  'cursor',
+  'opencode',
+  'factory-droid',
+  'windsurf',
+  'zed-ai',
+  'copilot',
+  'aider',
+  'codeium',
+  'continue'
+];
 
 function resolvePlatform(platformArg?: string): PlatformId {
   if (platformArg === 'glm' || platformArg === 'minimax') {
@@ -23,6 +36,12 @@ export async function handleToolList(): Promise<void> {
     } else {
       logger.warning('✗ ' + tool.displayName);
     }
+  const tools = toolRegistry.getSupportedTools();
+  console.log('\nSupported tools:');
+  for (const tool of tools) {
+    const installed = toolInstaller.isToolInstalled(tool.id) ? '✓' : '✗';
+    const loadable = LOADABLE_TOOLS.includes(tool.id) ? '' : ' (inspect only)';
+    console.log(`  ${installed} ${tool.displayName}${loadable}`);
   }
 }
 
