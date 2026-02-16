@@ -4,7 +4,7 @@ import os from 'node:os';
 import yaml from 'js-yaml';
 import type { UnifiedConfig, PlatformId, PlanType, Language, PlatformConfig } from '../types/config.js';
 import { logger } from './logger.js';
-import { ConfigError, ErrorCode, ErrorSeverity, wrapError } from './errors.js';
+import { encrypt, decrypt } from './crypto.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.unified-coding-helper');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.yaml');
@@ -35,30 +35,7 @@ class ConfigManager {
 
   private ensureConfigDir(): void {
     if (!fs.existsSync(CONFIG_DIR)) {
-      try {
-        fs.mkdirSync(CONFIG_DIR, { recursive: true });
-      } catch (error) {
-        const configError = wrapError(
-          error as Error,
-          ErrorCode.CONFIG_DIR_CREATE_FAILED,
-          `Failed to create config directory: ${(error as Error).message}`,
-          {
-            severity: ErrorSeverity.HIGH,
-            context: {
-              operation: 'create config directory',
-              filePath: CONFIG_DIR,
-              details: { configDir: CONFIG_DIR }
-            },
-            suggestedActions: [
-              `Check if the path ${CONFIG_DIR} is writable`,
-              'Ensure you have proper filesystem permissions',
-              'Try creating the directory manually: mkdir -p ~/.unified-coding-helper'
-            ]
-          }
-        );
-        configError.log();
-        throw configError;
-      }
+      fs.mkdirSync(CONFIG_DIR, { recursive: true });
     }
   }
 
@@ -73,25 +50,7 @@ class ConfigManager {
         this.config = { ...DEFAULT_CONFIG };
       }
     } catch (error) {
-      const configError = wrapError(
-        error as Error,
-        ErrorCode.CONFIG_LOAD_FAILED,
-        `Failed to load configuration: ${(error as Error).message}`,
-        {
-          severity: ErrorSeverity.MEDIUM,
-          context: {
-            operation: 'load config',
-            filePath: CONFIG_FILE,
-            details: { configDir: CONFIG_DIR }
-          },
-          suggestedActions: [
-            'Check if the config file exists and is valid YAML format',
-            'Run the configuration wizard: npx unified-coding-helper config',
-            'Try deleting the config file and re-running the setup'
-          ]
-        }
-      );
-      configError.log();
+      logger.warning(`Failed to load config: ${error}`);
       this.config = { ...DEFAULT_CONFIG };
     }
     return this.config;
@@ -106,25 +65,7 @@ class ConfigManager {
       const content = yaml.dump(this.config);
       fs.writeFileSync(CONFIG_FILE, content, 'utf-8');
     } catch (error) {
-      const configError = wrapError(
-        error as Error,
-        ErrorCode.CONFIG_SAVE_FAILED,
-        `Failed to save configuration: ${(error as Error).message}`,
-        {
-          severity: ErrorSeverity.HIGH,
-          context: {
-            operation: 'save config',
-            filePath: CONFIG_FILE,
-            details: { configDir: CONFIG_DIR }
-          },
-          suggestedActions: [
-            'Check file permissions in the config directory',
-            `Ensure the directory ${CONFIG_DIR} is writable`,
-            'Try running the command with elevated permissions'
-          ]
-        }
-      );
-      configError.log();
+      logger.error(`Failed to save config: ${error}`);
     }
   }
 

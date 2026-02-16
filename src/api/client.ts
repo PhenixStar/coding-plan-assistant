@@ -532,7 +532,12 @@ class ApiClient {
     message?: string;
     severity: 'low' | 'medium' | 'high' | 'critical';
   }> {
-    const checks = [];
+    const checks: Array<{
+    name: string;
+    passed: boolean;
+    message?: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+  }> = [];
 
     // Check config
     try {
