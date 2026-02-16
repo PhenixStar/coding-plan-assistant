@@ -1,0 +1,7 @@
+/**
+ * Scriptable Automation API
+ * Provides programmatic access to CLI functionality for scripts and CI/CD
+ */
+
+export * from './types.js';
+export * from './client.js';
