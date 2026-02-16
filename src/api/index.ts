@@ -6,3 +6,4 @@
 export * from './types.js';
 export * from './client.js';
 export * from './lang.js';
+export * from './platform.js';

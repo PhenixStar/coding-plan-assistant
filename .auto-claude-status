@@ -1,13 +1,25 @@
 {
   "active": true,
+  "spec": "011-scriptable-automation-api",
+  "state": "building",
+  "subtasks": {
+    "completed": 4,
+    "total": 16,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
+    "current": "Config API Exposure",
+    "id": null,
+    "total": 2
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
+    "number": 6,
+    "started_at": "2026-02-16T07:40:23.169435"
+  },
+  "last_update": "2026-02-16T08:20:23.474635"
 }
