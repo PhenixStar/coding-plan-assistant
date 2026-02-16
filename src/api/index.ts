@@ -8,3 +8,4 @@ export * from './client.js';
 export * from './lang.js';
 export * from './platform.js';
 export * from './auth.js';
+export * from './tools.js';

@@ -112,6 +112,7 @@ export interface ListToolsResult {
 
 export interface LoadToolParams {
   toolId: string;
+  platform?: PlatformId;
 }
 
 export interface LoadToolResult {
@@ -122,6 +123,7 @@ export interface LoadToolResult {
 
 export interface UnloadToolParams {
   toolId: string;
+  platform?: PlatformId;
 }
 
 export interface UnloadToolResult {
