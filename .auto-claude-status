@@ -3,13 +3,13 @@
   "spec": "011-scriptable-automation-api",
   "state": "building",
   "subtasks": {
-    "completed": 9,
+    "completed": 11,
     "total": 16,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Config-as-Code Support",
+    "current": "TypeScript Types Export",
     "id": null,
     "total": 2
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 3,
+    "number": 5,
     "started_at": "2026-02-17T08:19:03.762542"
   },
-  "last_update": "2026-02-17T08:22:31.597080"
+  "last_update": "2026-02-17T08:28:57.483585"
 }
