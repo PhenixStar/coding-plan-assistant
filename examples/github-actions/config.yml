@@ -1,0 +1,16 @@
+# CPA Configuration File
+# This configuration can be used in CI/CD pipelines with --config flag
+# Example: cpa --config config.yml doctor
+
+lang: en_US
+platform: glm
+plan: global
+active_platform: glm
+
+glm:
+  api_key: ""
+  plan: global
+
+minimax:
+  api_key: ""
+  plan: china

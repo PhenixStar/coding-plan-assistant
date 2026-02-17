@@ -1,0 +1,112 @@
+# GitHub Action for Coding Plan Assistant (CPA)
+# This action demonstrates how to use CPA in your CI/CD pipeline
+#
+# Usage:
+#   - name: Run CPA Doctor
+#     uses: your-org/cpa-action@v1
+#     with:
+#       config-path: ./cpa-config.yml
+#       api-key: ${{ secrets.CPA_API_KEY }}
+#       platform: glm
+
+name: "CPA - Setup AI Coding Platform"
+
+description: "Configure AI coding platform settings in your CI/CD pipeline"
+
+author: "CPA Team"
+
+inputs:
+  config-path:
+    description: "Path to CPA configuration file"
+    required: false
+    default: ""
+  api-key:
+    description: "API key for the AI platform"
+    required: false
+    default: ""
+  platform:
+    description: "AI platform to use (glm or minimax)"
+    required: false
+    default: "glm"
+  command:
+    description: "CPA command to run (doctor, tool list, etc.)"
+    required: false
+    default: "doctor"
+  language:
+    description: "Language for CPA (en_US or zh_CN)"
+    required: false
+    default: "en_US"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install CPA
+      shell: bash
+      run: |
+        npm install -g coding-plan-assistant
+
+    - name: Create config file
+      if: inputs.config-path != '' || inputs.api-key != ''
+      shell: bash
+      run: |
+        CONFIG_FILE="cpa-config.yml"
+
+        # If config-path provided, copy it
+        if [ -n "${{ inputs.config-path }}" ]; then
+          cp "${{ inputs.config-path }}" "$CONFIG_FILE"
+        else
+          # Create basic config
+          cat > "$CONFIG_FILE" << EOF
+        lang: ${{ inputs.language }}
+        platform: ${{ inputs.platform }}
+        plan: global
+        active_platform: ${{ inputs.platform }}
+
+        glm:
+          api_key: ""
+          plan: global
+
+        minimax:
+          api_key: ""
+          plan: china
+        EOF
+        fi
+
+        # Set API key if provided
+        if [ -n "${{ inputs.api-key }}" ]; then
+          # Use sed to update the api_key in the config file
+          sed -i "s/api_key: \"\"/api_key: \"${{ inputs.api-key }}\"/" "$CONFIG_FILE"
+        fi
+
+        cat "$CONFIG_FILE"
+
+    - name: Run CPA Command
+      shell: bash
+      run: |
+        CMD_ARGS=""
+
+        # Add config file if it exists
+        if [ -f "cpa-config.yml" ]; then
+          CMD_ARGS="--config cpa-config.yml"
+        fi
+
+        # Run the specified command
+        cpa $CMD_ARGS ${{ inputs.command }}
+
+    - name: Export Configuration
+      if: inputs.command == 'doctor'
+      shell: bash
+      run: |
+        echo "CPA doctor check completed"
+        echo "::set-output name=cpa-status::completed"
+      id: cpa-status
+
+outputs:
+  status:
+    description: "CPA command status"
+    value: ${{ steps.cpa-status.outputs.cpa-status || 'completed' }}
