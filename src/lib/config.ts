@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import yaml from 'js-yaml';
@@ -8,6 +8,9 @@ import { encrypt, decrypt } from './crypto.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.unified-coding-helper');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.yaml');
+
+// Supported config file extensions
+const SUPPORTED_EXTENSIONS = ['.yaml', '.yml', '.json'];
 
 const DEFAULT_CONFIG: UnifiedConfig = {
   lang: 'en_US',
@@ -79,6 +82,39 @@ class ConfigManager {
 
   isFirstRun(): boolean {
     return !fs.existsSync(CONFIG_FILE);
+  }
+
+  loadConfigFromFile(configPath: string): UnifiedConfig {
+    const resolvedPath = path.resolve(configPath);
+
+    if (!existsSync(resolvedPath)) {
+      throw new Error(`Config file not found: ${resolvedPath}`);
+    }
+
+    const ext = path.extname(resolvedPath).toLowerCase();
+
+    if (!SUPPORTED_EXTENSIONS.includes(ext)) {
+      throw new Error(`Unsupported config file format: ${ext}. Supported formats: ${SUPPORTED_EXTENSIONS.join(', ')}`);
+    }
+
+    try {
+      const content = fs.readFileSync(resolvedPath, 'utf-8');
+      let loaded: UnifiedConfig;
+
+      if (ext === '.json') {
+        loaded = JSON.parse(content) as UnifiedConfig;
+      } else {
+        loaded = yaml.load(content) as UnifiedConfig;
+      }
+
+      // Merge with default config
+      this.config = { ...DEFAULT_CONFIG, ...loaded };
+      this.saveConfig();
+      logger.info(`Loaded config from: ${resolvedPath}`);
+      return this.config;
+    } catch (error) {
+      throw new Error(`Failed to load config from ${resolvedPath}: ${error}`);
+    }
   }
 
   // Language getters/setters

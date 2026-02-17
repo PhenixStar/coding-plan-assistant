@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import type { Language} from './types/config.js';
@@ -20,7 +20,8 @@ const packageJson = JSON.parse(
 
 const program = new Command('uchelper')
   .version(packageJson.version)
-  .description(packageJson.description);
+  .description(packageJson.description)
+  .option('-c, --config <path>', 'Path to configuration file (YAML or JSON)');
 
 // Init command - run initialization wizard
 program
@@ -147,5 +148,32 @@ if (process.argv.length === 2) {
     await wizard.showMainMenu();
   }
 } else {
+  // Handle --config flag by pre-parsing arguments
+  // Extract --config value before main parsing
+  const configArgIndex = process.argv.findIndex((arg) => arg === '-c' || arg === '--config');
+  let configPath: string | undefined;
+
+  if (configArgIndex !== -1) {
+    configPath = process.argv[configArgIndex + 1];
+    // Remove -c/--config and its value from argv for cleaner parsing
+    const cleanArgv = [...process.argv];
+    if (process.argv[configArgIndex] === '-c' || process.argv[configArgIndex] === '--config') {
+      cleanArgv.splice(configArgIndex, 2);
+    } else {
+      cleanArgv.splice(configArgIndex, 1);
+    }
+    process.argv = cleanArgv;
+  }
+
+  // Load config from file if --config was provided
+  if (configPath) {
+    try {
+      configManager.loadConfigFromFile(configPath);
+    } catch (error) {
+      console.error(`Error loading config: ${error instanceof Error ? error.message : error}`);
+      process.exit(1);
+    }
+  }
+
   program.parseAsync(process.argv);
 }
