@@ -1,0 +1,138 @@
+# GitLab CI Pipeline for Coding Plan Assistant (CPA)
+# This pipeline demonstrates how to use CPA in your CI/CD workflow
+#
+# Usage:
+#   1. Add this file to your repository as .gitlab-ci.yml
+#   2. Configure CPA_API_KEY as a CI/CD variable (Settings > CI/CD > Variables)
+#   3. Optionally add a cpa-config.yml to your repository
+#
+# Example variables to configure:
+#   - CPA_API_KEY: Your AI platform API key
+#   - CPA_CONFIG_PATH: Path to config file (optional)
+
+stages:
+  - setup
+  - verify
+
+variables:
+  CPA_COMMAND: "doctor"
+  CPA_PLATFORM: "glm"
+  CPA_LANGUAGE: "en_US"
+  NODE_VERSION: "20"
+
+# Default configuration template
+.cpa_config_template: &cpa_config_template
+  LANG: ${CPA_LANGUAGE}
+  PLATFORM: ${CPA_PLATFORM}
+  PLAN: global
+  ACTIVE_PLATFORM: ${CPA_PLATFORM}
+
+  GLM:
+    API_KEY: ""
+    PLAN: global
+
+  MINIMAX:
+    API_KEY: ""
+    PLAN: china
+
+# Install CPA globally
+install-cpa:
+  stage: setup
+  image: node:${NODE_VERSION}-alpine
+  before_script:
+    - npm install -g coding-plan-assistant
+  script:
+    - cpa --version
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+  tags:
+    - docker
+
+# Run CPA doctor to verify configuration
+cpa-doctor:
+  stage: verify
+  image: node:${NODE_VERSION}-alpine
+  needs:
+    - install-cpa
+  before_script:
+    - npm install -g coding-plan-assistant
+  script:
+    # Create config file if CPA_CONFIG_PATH is not provided
+    - |
+      if [ -n "${CPA_CONFIG_PATH}" ] && [ -f "${CPA_CONFIG_PATH}" ]; then
+        echo "Using config from ${CPA_CONFIG_PATH}"
+        cp "${CPA_CONFIG_PATH}" cpa-config.yml
+      else
+        echo "Creating default config file"
+        cat > cpa-config.yml << EOF
+        lang: ${CPA_LANGUAGE}
+        platform: ${CPA_PLATFORM}
+        plan: global
+        active_platform: ${CPA_PLATFORM}
+
+        glm:
+          api_key: ""
+          plan: global
+
+        minimax:
+          api_key: ""
+          plan: china
+        EOF
+      fi
+
+    # Update API key if provided
+    - |
+      if [ -n "${CPA_API_KEY}" ]; then
+        sed -i "s/api_key: \"\"/api_key: \"${CPA_API_KEY}\"/" cpa-config.yml
+      fi
+
+    # Display config (without exposing secrets)
+    - |
+      cat cpa-config.yml | sed 's/api_key: "[^"]*"/api_key: "***"/'
+
+    # Run CPA command
+    - cpa --config cpa-config.yml ${CPA_COMMAND}
+  tags:
+    - docker
+
+# Example: Run CPA tool list
+cpa-tool-list:
+  stage: verify
+  image: node:${NODE_VERSION}-alpine
+  needs:
+    - install-cpa
+  variables:
+    CPA_COMMAND: "tool list"
+  before_script:
+    - npm install -g coding-plan-assistant
+  script:
+    - cpa --config cpa-config.yml ${CPA_COMMAND}
+  tags:
+    - docker
+  when: manual
+  allow_failure: false
+
+# Example: Validate configuration without running commands
+cpa-validate:
+  stage: verify
+  image: node:${NODE_VERSION}-alpine
+  needs:
+    - install-cpa
+  variables:
+    CPA_COMMAND: "config validate"
+  before_script:
+    - npm install -g coding-plan-assistant
+  script:
+    - |
+      if [ -n "${CPA_CONFIG_PATH}" ]; then
+        cpa --config "${CPA_CONFIG_PATH}" ${CPA_COMMAND}
+      else
+        echo "No config file to validate"
+        exit 0
+      fi
+  tags:
+    - docker
+  when: manual
+  allow_failure: false
