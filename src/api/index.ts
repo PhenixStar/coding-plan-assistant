@@ -10,3 +10,4 @@ export * from './platform.js';
 export * from './auth.js';
 export * from './tools.js';
 export * from './doctor.js';
+export * from './config.js';

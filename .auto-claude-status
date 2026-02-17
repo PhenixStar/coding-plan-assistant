@@ -3,13 +3,13 @@
   "spec": "011-scriptable-automation-api",
   "state": "building",
   "subtasks": {
-    "completed": 7,
+    "completed": 8,
     "total": 16,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Tool API Exposure",
+    "current": "Config-as-Code Support",
     "id": null,
     "total": 2
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 9,
-    "started_at": "2026-02-16T07:40:23.169435"
+    "number": 2,
+    "started_at": "2026-02-17T08:19:03.762542"
   },
-  "last_update": "2026-02-16T08:34:55.768367"
+  "last_update": "2026-02-17T08:20:18.263826"
 }
