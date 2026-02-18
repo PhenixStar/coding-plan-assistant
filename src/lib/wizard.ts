@@ -1,6 +1,6 @@
 import inquirer from 'inquirer';
 import ora from 'ora';
-import type { Language, PlatformId, PlanType } from '../types/config.js';
+import type { Language, PlatformId, PlanType, CredentialStorageType } from '../types/config.js';
 import type { ToolInfo } from '../types/tools.js';
 import { configManager } from './config.js';
 import { platformManager } from './platform-manager.js';
@@ -11,6 +11,7 @@ import { toolConfigManager } from './tool-config-manager.js';
 import { mcpManager } from './mcp-manager.js';
 import { logger } from './logger.js';
 import { i18n } from './i18n.js';
+import { secureCredentialManager } from './secure-credential-manager.js';
 
 class Wizard {
   private static instance: Wizard;
@@ -48,23 +49,8 @@ class Wizard {
     await this.configLanguage();
     await this.configPlatform();
     await this.configPlan();
-
-    // Ask if user wants to set a master password for encryption
-    const { usePassword } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'usePassword',
-        message: i18n.t('wizard.set_master_password'),
-        default: true
-      }
-    ]);
-
-    let masterPassword: string | undefined;
-    if (usePassword) {
-      masterPassword = await this.configMasterPassword();
-    }
-
-    await this.configApiKey(configManager.getActivePlatform(), masterPassword);
+    await this.configCredentialStorage();
+    await this.configApiKey(configManager.getActivePlatform());
 
     console.log('');
     logger.success(i18n.t('messages.config_saved'));
@@ -168,8 +154,41 @@ class Wizard {
     return plan;
   }
 
-  async configApiKey(platform: PlatformId, password?: string): Promise<string> {
-    const existingKey = configManager.getApiKey(platform, password);
+  async configCredentialStorage(): Promise<CredentialStorageType> {
+    const currentType = configManager.getCredentialStorageType() || 'env';
+
+    const { storageType } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'storageType',
+        message: i18n.t('wizard.select_credential_storage'),
+        choices: [
+          {
+            name: i18n.t('wizard.credential_storage_env'),
+            value: 'env' as CredentialStorageType
+          },
+          {
+            name: i18n.t('wizard.credential_storage_config'),
+            value: 'config' as CredentialStorageType
+          }
+        ],
+        default: currentType
+      }
+    ]);
+
+    configManager.setCredentialStorageType(storageType);
+
+    if (storageType === 'env') {
+      logger.info(i18n.t('wizard.credential_storage_env_info'));
+    } else {
+      logger.warning(i18n.t('wizard.credential_storage_config_warning'));
+    }
+
+    return storageType;
+  }
+
+  async configApiKey(platform: PlatformId): Promise<string> {
+    const existingKey = configManager.getApiKey(platform);
     const apiDocsUrl = platformManager.getApiDocsUrl(platform);
 
     console.log('\n' + i18n.t('auth.get_api_key_hint', { url: apiDocsUrl }));
@@ -225,6 +244,7 @@ class Wizard {
         { name: i18n.t('menu_config_language'), value: 'lang' },
         { name: i18n.t('menu_select_platform'), value: 'platform' },
         { name: i18n.t('menu_select_plan'), value: 'plan' },
+        { name: i18n.t('menu_config_credential_storage'), value: 'credential_storage' },
         { name: i18n.t('menu_config_api_key'), value: 'apikey' },
         { name: i18n.t('menu_config_tool'), value: 'tool' },
         { name: i18n.t('menu_exit'), value: 'exit' }
@@ -258,6 +278,9 @@ class Wizard {
         break;
       case 'plan':
         await this.configPlan();
+        break;
+      case 'credential_storage':
+        await this.configCredentialStorage();
         break;
       case 'apikey':
         await this.configApiKeyWithPassword();
@@ -353,6 +376,8 @@ class Wizard {
   }
 
   async loadConfig(toolId: string, platform: PlatformId): Promise<void> {
+    const useSecureStorage = configManager.getCredentialStorageType() === 'env';
+    const supportsSecureStorage = toolManager.supportsSecureStorage(toolId);
     const spinner = ora(i18n.t('wizard.loading_config'));
     spinner.start();
 
@@ -362,12 +387,40 @@ class Wizard {
 
       if (success) {
         logger.success(i18n.t('wizard.config_loaded', { tool: toolId }));
+
+        // Show secure storage info if enabled
+        if (useSecureStorage) {
+          if (supportsSecureStorage) {
+            this.showSecureStorageInfo(toolId, platform);
+          } else {
+            // Tool doesn't support secure storage - warn user
+            logger.warning(i18n.t('wizard.tool_no_secure_storage_warning'));
+          }
+        } else {
+          // Plaintext storage is used
+          if (supportsSecureStorage) {
+            logger.warning(i18n.t('wizard.config_plaintext_warning'));
+          } else {
+            // Tool must use plaintext - stronger warning
+            logger.warning(i18n.t('wizard.tool_plaintext_only_warning'));
+          }
+        }
       } else {
         logger.error(i18n.t('wizard.config_failed'));
       }
     } catch (error) {
       spinner.stop();
       logger.error(i18n.t('wizard.config_failed') + ': ' + error);
+    }
+  }
+
+  private showSecureStorageInfo(toolId: string, platform: PlatformId): void {
+    const credentials = secureCredentialManager.getAllCredentialsForTool(toolId)
+      .filter(c => c.platformId === platform);
+
+    if (credentials.length > 0) {
+      console.log('\n' + i18n.t('wizard.secure_storage_info'));
+      console.log(i18n.t('wizard.secure_storage_hint'));
     }
   }
 

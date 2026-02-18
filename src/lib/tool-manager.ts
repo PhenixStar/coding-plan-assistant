@@ -10,6 +10,7 @@ import { toolConfigManager } from './tool-config-manager.js';
 import { toolBackupManager } from './tool-backup-manager.js';
 import { toolPlatformConfig } from './tool-platform-config.js';
 import { logger } from './logger.js';
+import { secureCredentialManager } from './secure-credential-manager.js';
 
 const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
 const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
@@ -136,6 +137,316 @@ class ToolManager {
     }
   }
 
+  private setupSecureEnvConfig(
+    toolId: string,
+    platformId: PlatformId,
+    toolConfig: ToolConfig,
+    envPrefix: string
+  ): boolean {
+    try {
+      // Store credentials securely using secure-credential-manager
+      const envVars = toolConfig.env || {};
+
+      // Store each env var as a secure credential
+      for (const [key, value] of Object.entries(envVars)) {
+        if (value && typeof value === 'string') {
+          secureCredentialManager.setCredential(
+            platformId,
+            toolId,
+            key,
+            value,
+            'env'
+          );
+        }
+      }
+
+      // Create wrapper script for the tool
+      secureCredentialManager.createWrapperScript(platformId, toolId);
+
+      // Create config with environment variable references instead of plaintext values
+      const envRefConfig: Record<string, string> = {};
+      for (const key of Object.keys(envVars)) {
+        const envVarName = this.getSecureEnvVarName(envPrefix, key);
+        envRefConfig[key] = `\${${envVarName}}`;
+      }
+
+      // Write config with env var references
+      const updated = this.updateToolConfig(toolId, { env: envRefConfig });
+
+      if (updated) {
+        logger.success(`Secure env-based config set up for ${toolId}`);
+      }
+
+      return updated;
+    } catch (error) {
+      logger.error(`Failed to setup secure env config for ${toolId}: ${error}`);
+      return false;
+    }
+  }
+
+  private getSecureEnvVarName(prefix: string, key: string): string {
+    // Convert key like ANTHROPIC_AUTH_TOKEN to ANTHROPIC_AUTH_TOKEN
+    // Remove any existing prefix to avoid duplication
+    const normalizedKey = key.replace(/^ANTHROPIC_/i, '');
+    return `${prefix}_${normalizedKey}`.toUpperCase().replace(/-/g, '_');
+  }
+
+  private setupAiderSecureConfig(
+    platformId: PlatformId,
+    toolConfig: ToolConfig,
+    envPrefix: string
+  ): boolean {
+    try {
+      // Store credentials securely using secure-credential-manager
+      const toolId = 'aider';
+
+      // Store API key as secure credential
+      if (toolConfig.apiKey) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'api-key',
+          toolConfig.apiKey,
+          'env'
+        );
+      }
+
+      // Store endpoint as secure credential if provided
+      if (toolConfig.baseUrl) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'endpoint',
+          toolConfig.baseUrl,
+          'env'
+        );
+      }
+
+      // Create wrapper script for the tool
+      secureCredentialManager.createWrapperScript(platformId, toolId);
+
+      // Create config with environment variable references instead of plaintext values
+      const apiKeyEnvVar = this.getSecureEnvVarName(envPrefix, 'API_KEY');
+      const endpointEnvVar = this.getSecureEnvVarName(envPrefix, 'ENDPOINT');
+
+      const configPath = path.join(os.homedir(), '.aider.conf.json');
+      const configDir = path.dirname(configPath);
+
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Update with environment variable references
+      existing['model'] = toolConfig.model;
+      existing['api-key'] = `\${${apiKeyEnvVar}}`;
+      if (toolConfig.baseUrl) {
+        existing['endpoint'] = `\${${endpointEnvVar}}`;
+      }
+
+      fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
+
+      logger.success(`Secure config set up for Aider`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to setup secure config for Aider: ${error}`);
+      return false;
+    }
+  }
+
+  private setupCopilotSecureConfig(
+    platformId: PlatformId,
+    toolConfig: ToolConfig,
+    envPrefix: string
+  ): boolean {
+    try {
+      // Store credentials securely using secure-credential-manager
+      const toolId = 'copilot';
+
+      // Store API key as secure credential
+      if (toolConfig.apiKey) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'api-key',
+          toolConfig.apiKey,
+          'env'
+        );
+      }
+
+      // Store endpoint as secure credential if provided
+      if (toolConfig.baseUrl) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'endpoint',
+          toolConfig.baseUrl,
+          'env'
+        );
+      }
+
+      // Create wrapper script for the tool
+      secureCredentialManager.createWrapperScript(platformId, toolId);
+
+      // Create config with environment variable references instead of plaintext values
+      const apiKeyEnvVar = this.getSecureEnvVarName(envPrefix, 'API_KEY');
+      const endpointEnvVar = this.getSecureEnvVarName(envPrefix, 'ENDPOINT');
+
+      const configPath = path.join(os.homedir(), '.github-copilot', 'config.json');
+      const configDir = path.dirname(configPath);
+
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(configPath)) {
+        const content = fs.readFileSync(configPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Update with environment variable references
+      existing['anthropic_api_key'] = `\${${apiKeyEnvVar}}`;
+      existing['anthropic_endpoint'] = toolConfig.baseUrl ? `\${${endpointEnvVar}}` : 'https://api.anthropic.com';
+      existing['model'] = toolConfig.model;
+
+      fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
+
+      // Also update env.json with references
+      const envConfigPath = path.join(os.homedir(), '.github-copilot', 'env.json');
+      let envExisting: any = {};
+      if (fs.existsSync(envConfigPath)) {
+        const content = fs.readFileSync(envConfigPath, 'utf-8');
+        envExisting = JSON.parse(content);
+      }
+
+      envExisting['ANTHROPIC_API_KEY'] = `\${${apiKeyEnvVar}}`;
+      if (toolConfig.baseUrl) {
+        envExisting['ANTHROPIC_API_BASE_URL'] = `\${${endpointEnvVar}}`;
+      }
+
+      fs.writeFileSync(envConfigPath, JSON.stringify(envExisting, null, 2));
+
+      logger.success(`Secure config set up for Copilot`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to setup secure config for Copilot: ${error}`);
+      return false;
+    }
+  }
+
+  private setupVSCodeExtensionSecureConfig(
+    toolId: string,
+    platformId: PlatformId,
+    toolConfig: ToolConfig,
+    envPrefix: string
+  ): boolean {
+    try {
+      // Store API key securely using secure-credential-manager
+      if (toolConfig.apiKey) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'api-key',
+          toolConfig.apiKey,
+          'env'
+        );
+      }
+
+      // Store base URL as secure credential if provided
+      if (toolConfig.baseUrl) {
+        secureCredentialManager.setCredential(
+          platformId,
+          toolId,
+          'base-url',
+          toolConfig.baseUrl,
+          'env'
+        );
+      }
+
+      // Create wrapper script for the tool
+      secureCredentialManager.createWrapperScript(platformId, toolId);
+
+      // Create config with environment variable references instead of plaintext values
+      const apiKeyEnvVar = this.getSecureEnvVarName(envPrefix, 'API_KEY');
+      const baseUrlEnvVar = this.getSecureEnvVarName(envPrefix, 'BASE_URL');
+
+      const vscodeSettingsPath = this.getVSCodeSettingsPath();
+      if (!vscodeSettingsPath) {
+        logger.error('Could not find VS Code settings path');
+        return false;
+      }
+
+      let existing: any = {};
+      if (fs.existsSync(vscodeSettingsPath)) {
+        const content = fs.readFileSync(vscodeSettingsPath, 'utf-8');
+        existing = JSON.parse(content);
+      }
+
+      // Get extension-specific config keys and use env var references
+      const extensionConfig = this.getExtensionConfigWithEnvRefs(toolId, toolConfig, apiKeyEnvVar, baseUrlEnvVar);
+
+      // Merge with existing settings
+      const merged = { ...existing, ...extensionConfig };
+      fs.writeFileSync(vscodeSettingsPath, JSON.stringify(merged, null, 2));
+
+      logger.success(`Secure config set up for ${SUPPORTED_TOOLS[toolId]?.displayName || toolId}`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to setup secure config for VSCode extension ${toolId}: ${error}`);
+      return false;
+    }
+  }
+
+  private getExtensionConfigWithEnvRefs(
+    toolId: string,
+    toolConfig: ToolConfig,
+    apiKeyEnvVar: string,
+    baseUrlEnvVar: string
+  ): any {
+    switch (toolId) {
+      case 'codeium':
+        return {
+          'codeium.enable': true,
+          'codeium.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'codeium.model': toolConfig.model
+        };
+      case 'continue':
+        return {
+          'continue.enable': true,
+          'continue.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'continue.model': toolConfig.model,
+          'continue.baseUrl': toolConfig.baseUrl ? `\${env:${baseUrlEnvVar}}` : 'https://api.anthropic.com'
+        };
+      case 'cline':
+        return {
+          'cline.enable': true,
+          'cline.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'cline.model': toolConfig.model,
+          'cline.apiUrl': toolConfig.baseUrl ? `\${env:${baseUrlEnvVar}}` : 'https://api.anthropic.com'
+        };
+      case 'roo-code':
+        return {
+          'rooCode.enable': true,
+          'rooCode.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'rooCode.model': toolConfig.model
+        };
+      case 'kilo-code':
+        return {
+          'kiloCode.enable': true,
+          'kiloCode.anthropicApiKey': `\${env:${apiKeyEnvVar}}`,
+          'kiloCode.model': toolConfig.model
+        };
+      default:
+        return {};
+    }
+  }
+
   private readBackups(): ToolBackups {
     try {
       if (!fs.existsSync(TOOL_BACKUP_FILE)) {
@@ -211,17 +522,52 @@ class ToolManager {
       return false;
     }
 
+    // Check if secure env-based storage is preferred
+    const useSecureStorage = configManager.getCredentialStorageType() === 'env';
+    const envPrefix = configManager.getCredentialStorageEnvPrefix() || 'ANTHROPIC';
+
     switch (toolId) {
       case 'claude-code':
       case 'cursor':
       case 'opencode':
         this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for env-based storage
+          return this.setupSecureEnvConfig(toolId, platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateToolConfig(toolId, { env: toolConfig.env });
       case 'factory-droid':
+        this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for env-based storage
+          return this.setupSecureEnvConfig(toolId, platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateFactoryDroidConfig(toolConfig);
       case 'aider':
+        this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for Aider
+          return this.setupAiderSecureConfig(platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateAiderConfig(toolConfig);
       case 'copilot':
+        this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for env-based storage
+          return this.setupCopilotSecureConfig(platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateCopilotConfig(toolConfig);
       case 'codeium':
       case 'continue':
@@ -229,6 +575,13 @@ class ToolManager {
       case 'roo-code':
       case 'kilo-code':
         this.backupToolConfigIfNeeded(toolId);
+
+        if (useSecureStorage) {
+          // Use secure credential manager for VSCode extensions
+          return this.setupVSCodeExtensionSecureConfig(toolId, platformId, toolConfig, envPrefix);
+        }
+
+        // Fallback to direct config (legacy behavior)
         return this.updateVSCodeExtensionConfig(toolId, toolConfig);
       default:
         logger.warning(`Load config not implemented for ${tool.name}`);
@@ -594,6 +947,48 @@ class ToolManager {
       return true;
     } catch (error) {
       logger.error(`Failed to remove Factory Droid model: ${error}`);
+      return false;
+    }
+  }
+
+  getInstalledTools(): string[] {
+    return Object.keys(SUPPORTED_TOOLS).filter(id => this.isToolInstalled(id));
+  }
+
+  /**
+   * Check if a tool supports secure env-based credential storage.
+   * Tools that don't support this must use plaintext config files.
+   */
+  supportsSecureStorage(toolId: string): boolean {
+    // Tools with secure storage implementations
+    const secureTools = [
+      'claude-code',
+      'cursor',
+      'opencode',
+      'factory-droid',
+      'aider',
+      'copilot',
+      'codeium',
+      'continue',
+      'cline',
+      'roo-code',
+      'kilo-code'
+    ];
+    return secureTools.includes(toolId);
+  }
+
+  /**
+   * Get list of tools that must use plaintext config (no secure storage support)
+   */
+  getPlaintextOnlyTools(): ToolInfo[] {
+    return this.getSupportedTools().filter(tool => !this.supportsSecureStorage(tool.id));
+  }
+
+  isGitInstalled(): boolean {
+    try {
+      execSync('git --version', { stdio: 'ignore' });
+      return true;
+    } catch {
       return false;
     }
   }
