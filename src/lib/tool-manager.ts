@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import type { ToolInfo, PlatformId } from '../types/tools.js';
 import type { ToolConfig, PlanType } from '../types/platform.js';
 import { configManager } from './config.js';
@@ -11,6 +11,150 @@ import { secureCredentialManager } from './secure-credential-manager.js';
 
 const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
 const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
+
+const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
+  'claude-code': {
+    id: 'claude-code',
+    name: 'Claude Code',
+    command: 'claude',
+    installCommand: 'npm install -g @anthropic-ai/claude-code',
+    configPath: path.join(os.homedir(), '.claude', 'settings.json'),
+    displayName: 'Claude Code',
+    supported: true
+  },
+  'cursor': {
+    id: 'cursor',
+    name: 'Cursor',
+    command: 'cursor',
+    installCommand: 'cursor --version || echo "Install from https://cursor.sh"',
+    configPath: path.join(os.homedir(), '.cursor', 'settings.json'),
+    displayName: 'Cursor',
+    supported: true
+  },
+  'cline': {
+    id: 'cline',
+    name: 'Cline',
+    command: 'code --list-extensions | grep -i cline',
+    installCommand: 'code --install-extension abc.cline',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Cline (VS Code)',
+    supported: true
+  },
+  'roo-code': {
+    id: 'roo-code',
+    name: 'Roo Code',
+    command: 'code --list-extensions | grep -i "roo code"',
+    installCommand: 'code --install-extension roovetterinc.roo-code',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Roo Code (VS Code)',
+    supported: true
+  },
+  'kilo-code': {
+    id: 'kilo-code',
+    name: 'Kilo Code',
+    command: 'code --list-extensions | grep -i "kilo code"',
+    installCommand: 'code --install-extension kilinc.kilo-code',
+    configPath: '', // VS Code workspace settings.json
+    displayName: 'Kilo Code (VS Code)',
+    supported: true
+  },
+  'opencode': {
+    id: 'opencode',
+    name: 'OpenCode',
+    command: 'opencode --version',
+    installCommand: 'npm install -g opencode',
+    configPath: path.join(os.homedir(), '.opencode', 'config.json'),
+    displayName: 'OpenCode',
+    supported: true
+  },
+  'factory-droid': {
+    id: 'factory-droid',
+    name: 'Factory Droid',
+    command: 'droid --version',
+    installCommand: 'curl -fsSL https://app.factory.ai/cli | sh',
+    configPath: path.join(os.homedir(), '.factory', 'config.json'),
+    displayName: 'Factory Droid',
+    supported: true
+  }
+};
+
+const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
+const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
+
+interface LegacyClaudeBackup {
+  env?: Record<string, string>;
+}
+
+interface ToolBackups {
+  toolConfigs?: Record<string, any>;
+}
+
+// Shell metacharacters that require shell interpretation
+const SHELL_METACHARACTERS = /[;&|`$(){}[\]<>\\!#*?"'\n\r]/;
+
+// Allowed command patterns for shell commands (whitelist approach)
+const ALLOWED_SHELL_COMMANDS = [
+  /^code --list-extensions \| grep -i /,
+  /^echo /,
+  /^curl -[a-zA-Z]+ /,
+  /^pip install /,
+  /^npm install /,
+  /^gh (extension )?install /,
+];
+
+/**
+ * Check if a command contains shell metacharacters
+ */
+function hasShellMetacharacters(command: string): boolean {
+  return SHELL_METACHARACTERS.test(command);
+}
+
+/**
+ * Parse a simple command into [program, args]
+ * Returns null if command contains shell metacharacters
+ */
+function parseSimpleCommand(command: string): { program: string; args: string[] } | null {
+  if (hasShellMetacharacters(command)) {
+    return null;
+  }
+
+  const parts = command.trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) {
+    return null;
+  }
+
+  return {
+    program: parts[0],
+    args: parts.slice(1)
+  };
+}
+
+/**
+ * Validate shell commands against allowed patterns
+ */
+function isShellCommandAllowed(command: string): boolean {
+  return ALLOWED_SHELL_COMMANDS.some(pattern => pattern.test(command));
+}
+
+/**
+ * Execute a command safely - uses execFileSync for simple commands,
+ * validated execSync for shell commands
+ */
+function safeExecSync(command: string, options: { stdio?: 'ignore' | 'inherit' } = {}): void {
+  const parsed = parseSimpleCommand(command);
+
+  if (parsed) {
+    // Safe: execFileSync doesn't use shell, args are passed directly
+    execFileSync(parsed.program, parsed.args, { stdio: options.stdio });
+  } else {
+    // Shell command - validate before execution
+    if (!isShellCommandAllowed(command)) {
+      throw new Error(`Command not allowed: ${command}`);
+    }
+    // Execute validated shell command with explicit shell
+    execSync(command, { stdio: options.stdio, shell: '/bin/sh' });
+  }
+}
 
 const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
   'claude-code': {
@@ -114,7 +258,7 @@ class ToolManager {
     if (!tool) return false;
 
     try {
-      execSync(tool.command, { stdio: 'ignore' });
+      safeExecSync(tool.command, { stdio: 'ignore' });
       return true;
     } catch {
       return false;
@@ -135,7 +279,7 @@ class ToolManager {
 
     try {
       logger.info(`Installing ${tool.displayName}...`);
-      execSync(tool.installCommand, { stdio: 'inherit' });
+      safeExecSync(tool.installCommand, { stdio: 'inherit' });
       logger.success(`${tool.displayName} installed successfully`);
       return true;
     } catch (error) {
@@ -731,14 +875,6 @@ class ToolManager {
         this.backupToolConfigIfNeeded(toolId);
         return this.updateToolConfig(toolId, { env: toolConfig.env });
       case 'factory-droid':
-        this.backupToolConfigIfNeeded(toolId);
-
-        if (useSecureStorage) {
-          // Use secure credential manager for env-based storage
-          return this.setupSecureEnvConfig(toolId, platformId, toolConfig, envPrefix);
-        }
-
-        // Fallback to direct config (legacy behavior)
         return this.updateFactoryDroidConfig(toolConfig);
       default:
         logger.warning(`Load config not implemented for ${tool.name}`);
@@ -838,7 +974,7 @@ class ToolManager {
 
   isGitInstalled(): boolean {
     try {
-      execSync('git --version', { stdio: 'ignore' });
+      safeExecSync('git --version', { stdio: 'ignore' });
       return true;
     } catch {
       return false;
