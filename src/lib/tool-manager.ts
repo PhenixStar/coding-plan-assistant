@@ -2,160 +2,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execSync } from 'node:child_process';
-import type { ToolInfo, PlatformId } from '../types/tools.js';
-import type { ToolConfig, PlanType } from '../types/platform.js';
-import { configManager } from './config.js';
-import { platformManager } from './platform-manager.js';
+import type { PlatformId } from '../types/config.js';
+import type { ToolConfig } from '../types/platform.js';
+import type { ToolInfo } from '../types/tools.js';
+import { toolRegistry } from './tool-registry.js';
+import { toolConfigManager } from './tool-config-manager.js';
+import { toolBackupManager } from './tool-backup-manager.js';
+import { toolPlatformConfig } from './tool-platform-config.js';
 import { logger } from './logger.js';
-
-const SUPPORTED_TOOLS: Record<string, ToolInfo> = {
-  'claude-code': {
-    id: 'claude-code',
-    name: 'Claude Code',
-    command: 'claude',
-    installCommand: 'npm install -g @anthropic-ai/claude-code',
-    configPath: path.join(os.homedir(), '.claude', 'settings.json'),
-    displayName: 'Claude Code',
-    supported: true
-  },
-  'cursor': {
-    id: 'cursor',
-    name: 'Cursor',
-    command: 'cursor',
-    installCommand: 'cursor --version || echo "Install from https://cursor.sh"',
-    configPath: path.join(os.homedir(), '.cursor', 'settings.json'),
-    displayName: 'Cursor',
-    supported: true
-  },
-  'cline': {
-    id: 'cline',
-    name: 'Cline',
-    command: 'code --list-extensions | grep -i cline',
-    installCommand: 'code --install-extension abc.cline',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Cline (VS Code)',
-    supported: true
-  },
-  'roo-code': {
-    id: 'roo-code',
-    name: 'Roo Code',
-    command: 'code --list-extensions | grep -i "roo code"',
-    installCommand: 'code --install-extension roovetterinc.roo-code',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Roo Code (VS Code)',
-    supported: true
-  },
-  'kilo-code': {
-    id: 'kilo-code',
-    name: 'Kilo Code',
-    command: 'code --list-extensions | grep -i "kilo code"',
-    installCommand: 'code --install-extension kilinc.kilo-code',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Kilo Code (VS Code)',
-    supported: true
-  },
-  'opencode': {
-    id: 'opencode',
-    name: 'OpenCode',
-    command: 'opencode --version',
-    installCommand: 'npm install -g opencode',
-    configPath: path.join(os.homedir(), '.opencode', 'config.json'),
-    displayName: 'OpenCode',
-    supported: true
-  },
-  'factory-droid': {
-    id: 'factory-droid',
-    name: 'Factory Droid',
-    command: 'droid --version',
-    installCommand: 'curl -fsSL https://app.factory.ai/cli | sh',
-    configPath: path.join(os.homedir(), '.factory', 'config.json'),
-    displayName: 'Factory Droid',
-    supported: true
-  },
-  'windsurf': {
-    id: 'windsurf',
-    name: 'Windsurf',
-    command: 'windsurf --version',
-    installCommand: 'echo "Install from https://windsurf.com"',
-    configPath: path.join(os.homedir(), '.windsurf', 'config.json'),
-    displayName: 'Windsurf',
-    supported: true
-  },
-  'zed-ai': {
-    id: 'zed-ai',
-    name: 'Zed AI',
-    command: 'zed --version',
-    installCommand: 'curl -fsSL https://zed.dev/install | sh',
-    configPath: path.join(os.homedir(), '.config', 'zed', 'settings.json'),
-    displayName: 'Zed AI',
-    supported: true
-  },
-  'copilot': {
-    id: 'copilot',
-    name: 'GitHub Copilot',
-    command: 'gh copilot --version',
-    installCommand: 'gh extension install github/copilot-cli',
-    configPath: path.join(os.homedir(), '.github-copilot'),
-    displayName: 'GitHub Copilot',
-    supported: true
-  },
-  'aider': {
-    id: 'aider',
-    name: 'Aider',
-    command: 'aider --version',
-    installCommand: 'pip install aider',
-    configPath: path.join(os.homedir(), '.aider.conf.json'),
-    displayName: 'Aider',
-    supported: true
-  },
-  'codeium': {
-    id: 'codeium',
-    name: 'Codeium',
-    command: 'code --list-extensions | grep -i codeium',
-    installCommand: 'code --install-extension codeium.codeium',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Codeium (VS Code)',
-    supported: true
-  },
-  'continue': {
-    id: 'continue',
-    name: 'Continue',
-    command: 'code --list-extensions | grep -i continue',
-    installCommand: 'code --install-extension continue.continue',
-    configPath: '', // VS Code workspace settings.json
-    displayName: 'Continue (VS Code)',
-    supported: true
-  },
-  'bolt-new': {
-    id: 'bolt-new',
-    name: 'Bolt.new',
-    command: 'echo "Bolt.new is browser-based"',
-    installCommand: 'echo "Open https://bolt.new in your browser"',
-    configPath: '',
-    displayName: 'Bolt.new',
-    supported: true
-  },
-  'lovable': {
-    id: 'lovable',
-    name: 'Lovable',
-    command: 'echo "Lovable is browser-based"',
-    installCommand: 'echo "Open https://lovable.dev in your browser"',
-    configPath: '',
-    displayName: 'Lovable',
-    supported: true
-  }
-};
 
 const CPA_STATE_DIR = path.join(os.homedir(), '.unified-coding-helper');
 const TOOL_BACKUP_FILE = path.join(CPA_STATE_DIR, 'tool-backups.json');
-
-interface LegacyClaudeBackup {
-  env?: Record<string, string>;
-}
-
-interface ToolBackups {
-  toolConfigs?: Record<string, any>;
-}
 
 class ToolManager {
   private static instance: ToolManager;
@@ -170,15 +27,15 @@ class ToolManager {
   }
 
   getTool(toolId: string): ToolInfo | undefined {
-    return SUPPORTED_TOOLS[toolId];
+    return toolRegistry.getTool(toolId);
   }
 
   getSupportedTools(): ToolInfo[] {
-    return Object.values(SUPPORTED_TOOLS).filter(t => t.supported);
+    return toolRegistry.getSupportedTools();
   }
 
   isToolInstalled(toolId: string): boolean {
-    const tool = SUPPORTED_TOOLS[toolId];
+    const tool = toolRegistry.getTool(toolId);
     if (!tool) return false;
 
     try {
@@ -193,6 +50,15 @@ class ToolManager {
     const tool = SUPPORTED_TOOLS[toolId];
     if (!tool) {
       logger.error(`Tool not found: ${toolId}`);
+      return false;
+    }
+  }
+
+  loadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
+    const tool = toolRegistry.getTool(toolId);
+    if (!tool) {
+      logger.error(`Tool not found: ${toolId}`);
+      logger.debug(`Attempted to load config for unknown tool: ${toolId}, platform: ${platformId}`);
       return false;
     }
 
@@ -341,6 +207,7 @@ class ToolManager {
     const toolConfig = platformManager.getToolConfig(platformId, plan, apiKey, endpoint || '');
     if (!toolConfig) {
       logger.error(`Failed to get tool config for ${platformId}`);
+      logger.debug(`Tool config retrieval failed for tool: ${toolId}, platform: ${platformId}`);
       return false;
     }
 
@@ -378,10 +245,10 @@ class ToolManager {
         fs.mkdirSync(configDir, { recursive: true });
       }
 
-      let existing: any = { custom_models: [] };
+      let existing: Record<string, unknown> = { custom_models: [] };
       if (fs.existsSync(configPath)) {
         const content = fs.readFileSync(configPath, 'utf-8');
-        existing = JSON.parse(content);
+        existing = JSON.parse(content) as Record<string, unknown>;
       }
 
       const customModel = {
@@ -394,16 +261,18 @@ class ToolManager {
       };
 
       // Check if model already exists
-      const index = existing.custom_models.findIndex(
-        (m: any) => m.model === customModel.model
+      const customModels = (existing.custom_models as Array<Record<string, unknown>>) || [];
+      const index = customModels.findIndex(
+        (m: Record<string, unknown>) => m.model === customModel.model
       );
 
       if (index >= 0) {
-        existing.custom_models[index] = customModel;
+        customModels[index] = customModel;
       } else {
-        existing.custom_models.push(customModel);
+        customModels.push(customModel);
       }
 
+      existing.custom_models = customModels;
       fs.writeFileSync(configPath, JSON.stringify(existing, null, 2));
       return true;
     } catch (error) {
@@ -421,10 +290,10 @@ class ToolManager {
         fs.mkdirSync(configDir, { recursive: true });
       }
 
-      let existing: any = {};
+      let existing: Record<string, unknown> = {};
       if (fs.existsSync(configPath)) {
         const content = fs.readFileSync(configPath, 'utf-8');
-        existing = JSON.parse(content);
+        existing = JSON.parse(content) as Record<string, unknown>;
       }
 
       // Update with platform config
@@ -445,7 +314,6 @@ class ToolManager {
   private updateCopilotConfig(toolConfig: ToolConfig): boolean {
     try {
       // Copilot CLI uses environment variables for custom endpoint configuration
-      // Create a wrapper script or config file
       const configPath = path.join(os.homedir(), '.github-copilot', 'config.json');
       const configDir = path.dirname(configPath);
 
@@ -453,10 +321,10 @@ class ToolManager {
         fs.mkdirSync(configDir, { recursive: true });
       }
 
-      let existing: any = {};
+      let existing: Record<string, unknown> = {};
       if (fs.existsSync(configPath)) {
         const content = fs.readFileSync(configPath, 'utf-8');
-        existing = JSON.parse(content);
+        existing = JSON.parse(content) as Record<string, unknown>;
       }
 
       // Store the configuration for Copilot CLI
@@ -468,10 +336,10 @@ class ToolManager {
 
       // Also backup current env config if exists
       const envConfigPath = path.join(os.homedir(), '.github-copilot', 'env.json');
-      let envExisting: any = {};
+      let envExisting: Record<string, unknown> = {};
       if (fs.existsSync(envConfigPath)) {
         const content = fs.readFileSync(envConfigPath, 'utf-8');
-        envExisting = JSON.parse(content);
+        envExisting = JSON.parse(content) as Record<string, unknown>;
       }
 
       // Store environment variables for CLI usage
@@ -496,10 +364,10 @@ class ToolManager {
         return false;
       }
 
-      let existing: any = {};
+      let existing: Record<string, unknown> = {};
       if (fs.existsSync(vscodeSettingsPath)) {
         const content = fs.readFileSync(vscodeSettingsPath, 'utf-8');
-        existing = JSON.parse(content);
+        existing = JSON.parse(content) as Record<string, unknown>;
       }
 
       // Extension-specific config keys
@@ -510,7 +378,7 @@ class ToolManager {
       fs.writeFileSync(vscodeSettingsPath, JSON.stringify(merged, null, 2));
       return true;
     } catch (error) {
-      logger.error(`Failed to update VS Code extension config for ${toolId}: ${error}`);
+      logger.error(`Failed to update VS Code extension config: ${error}`);
       return false;
     }
   }
@@ -535,7 +403,7 @@ class ToolManager {
     return possiblePaths[0];
   }
 
-  private getExtensionConfig(toolId: string, toolConfig: ToolConfig): any {
+  private getExtensionConfig(toolId: string, toolConfig: ToolConfig): Record<string, unknown> {
     switch (toolId) {
       case 'codeium':
         return {
@@ -582,7 +450,7 @@ class ToolManager {
       }
 
       const content = fs.readFileSync(vscodeSettingsPath, 'utf-8');
-      const settings: any = JSON.parse(content);
+      const settings = JSON.parse(content) as Record<string, unknown>;
 
       const keysToRemove = this.getExtensionConfigKeys(toolId);
 
@@ -616,10 +484,10 @@ class ToolManager {
   }
 
   unloadPlatformConfig(toolId: string, platformId: PlatformId): boolean {
-    const tool = SUPPORTED_TOOLS[toolId];
+    const tool = toolRegistry.getTool(toolId);
     if (!tool) return false;
 
-    const toolConfig = platformManager.getToolConfig(platformId, 'global', '', '');
+    const toolConfig = toolPlatformConfig.getToolConfig(platformId);
     if (!toolConfig) return false;
 
     switch (toolId) {
@@ -628,7 +496,7 @@ class ToolManager {
       case 'opencode':
         return this.restoreToolConfigFromBackup(toolId);
       case 'factory-droid':
-        return this.removeFactoryDroidModel(toolConfig?.model || '');
+        return this.removeFactoryDroidModel(toolConfig.model || '');
       case 'aider':
         return this.removeAiderConfig();
       case 'copilot':
@@ -640,8 +508,16 @@ class ToolManager {
       case 'kilo-code':
         return this.removeVSCodeExtensionConfig(toolId);
       default:
+        logger.warning(`Unload config not implemented for ${tool.name}`);
+        logger.debug(`Unload config not supported for tool: ${toolId}, platform: ${platformId}`);
         return false;
     }
+  }
+
+  private restoreToolConfigFromBackup(toolId: string): boolean {
+    const tool = toolRegistry.getTool(toolId);
+    if (!tool || !tool.configPath) return false;
+    return toolBackupManager.restoreToolConfig(toolId, tool.configPath);
   }
 
   private removeAiderConfig(): boolean {
@@ -650,7 +526,7 @@ class ToolManager {
       if (!fs.existsSync(configPath)) return true;
 
       const content = fs.readFileSync(configPath, 'utf-8');
-      const config: any = JSON.parse(content);
+      const config = JSON.parse(content) as Record<string, unknown>;
 
       // Remove platform-specific keys
       delete config['model'];
@@ -673,7 +549,7 @@ class ToolManager {
       // Remove config.json entries
       if (fs.existsSync(configPath)) {
         const content = fs.readFileSync(configPath, 'utf-8');
-        const config: any = JSON.parse(content);
+        const config = JSON.parse(content) as Record<string, unknown>;
 
         delete config['anthropic_api_key'];
         delete config['anthropic_endpoint'];
@@ -685,7 +561,7 @@ class ToolManager {
       // Remove env.json entries
       if (fs.existsSync(envConfigPath)) {
         const content = fs.readFileSync(envConfigPath, 'utf-8');
-        const envConfig: any = JSON.parse(content);
+        const envConfig = JSON.parse(content) as Record<string, unknown>;
 
         delete envConfig['ANTHROPIC_API_KEY'];
         delete envConfig['ANTHROPIC_API_BASE_URL'];
@@ -706,29 +582,18 @@ class ToolManager {
       if (!fs.existsSync(configPath)) return true;
 
       const content = fs.readFileSync(configPath, 'utf-8');
-      const config: any = JSON.parse(content);
+      const config = JSON.parse(content) as Record<string, unknown>;
 
       if (config.custom_models && Array.isArray(config.custom_models)) {
-        config.custom_models = config.custom_models.filter((m: any) => m.model !== model);
+        config.custom_models = (config.custom_models as Array<Record<string, unknown>>).filter(
+          (m: Record<string, unknown>) => m.model !== model
+        );
       }
 
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
       return true;
     } catch (error) {
       logger.error(`Failed to remove Factory Droid model: ${error}`);
-      return false;
-    }
-  }
-
-  getInstalledTools(): string[] {
-    return Object.keys(SUPPORTED_TOOLS).filter(id => this.isToolInstalled(id));
-  }
-
-  isGitInstalled(): boolean {
-    try {
-      execSync('git --version', { stdio: 'ignore' });
-      return true;
-    } catch {
       return false;
     }
   }
