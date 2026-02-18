@@ -11,6 +11,7 @@ export default tseslint.config(
       'dist/',
       'node_modules/',
       'coverage/',
+      'examples/',
       'eslint.config.js',
       'eslint.config.mjs',
       'eslint.config.cjs',
