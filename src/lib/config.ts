@@ -38,7 +38,7 @@ class ConfigManager {
 
   private ensureConfigDir(): void {
     if (!fs.existsSync(CONFIG_DIR)) {
-      fs.mkdirSync(CONFIG_DIR, { recursive: true });
+      fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
     }
   }
 
@@ -66,7 +66,7 @@ class ConfigManager {
     this.ensureConfigDir();
     try {
       const content = yaml.dump(this.config);
-      fs.writeFileSync(CONFIG_FILE, content, 'utf-8');
+      fs.writeFileSync(CONFIG_FILE, content, { encoding: 'utf-8', mode: 0o600 });
     } catch (error) {
       logger.error(`Failed to save config: ${error}`);
     }

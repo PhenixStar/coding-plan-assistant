@@ -1,0 +1,19 @@
+{
+  "files_to_modify": {
+    "cli": ["src/lib/config.ts"]
+  },
+  "files_to_reference": ["src/__tests__/config.test.ts"],
+  "patterns": {
+    "service_pattern": "ConfigManager singleton pattern using getInstance()",
+    "file_operations": "Uses fs.mkdirSync and fs.writeFileSync for file operations"
+  },
+  "existing_implementations": {
+    "description": "The config.ts file uses fs.mkdirSync and fs.writeFileSync with default permissions",
+    "relevant_files": ["src/lib/config.ts"],
+    "issue": "ensureConfigDir() creates directory with default 755 permissions, saveConfig() creates file with default 644 permissions",
+    "fix_needed": {
+      "directory": "Use mode: 0o700 in mkdirSync options",
+      "file": "Use { mode: 0o600 } in writeFileSync options"
+    }
+  }
+}

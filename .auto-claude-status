@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "011-scriptable-automation-api",
+  "spec": "006-insufficient-config-file-permissions",
   "state": "building",
   "subtasks": {
-    "completed": 11,
-    "total": 16,
+    "completed": 2,
+    "total": 3,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "TypeScript Types Export",
+    "current": "Fix Config File Permissions",
     "id": null,
-    "total": 2
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 5,
-    "started_at": "2026-02-17T08:19:03.762542"
+    "number": 4,
+    "started_at": "2026-02-16T04:52:18.373959"
   },
-  "last_update": "2026-02-17T08:28:57.483585"
+  "last_update": "2026-02-16T05:03:28.104252"
 }
