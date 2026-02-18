@@ -15,7 +15,9 @@ import { secureCredentialManager } from './secure-credential-manager.js';
 
 class Wizard {
   private static instance: Wizard;
-  private readonly BOX_WIDTH = 60;
+  private readonly MIN_BOX_WIDTH = 40;
+  private readonly MAX_BOX_WIDTH = 80;
+  private readonly DEFAULT_BOX_WIDTH = 60;
 
   private constructor() {}
 
@@ -26,12 +28,24 @@ class Wizard {
     return Wizard.instance;
   }
 
+  private getBoxWidth(): number {
+    const terminalWidth = process.stdout.columns;
+    if (!terminalWidth || terminalWidth < this.MIN_BOX_WIDTH + 4) {
+      return this.DEFAULT_BOX_WIDTH;
+    }
+    // Use terminal width minus padding (2 chars on each side)
+    const boxWidth = terminalWidth - 4;
+    // Clamp to min/max bounds
+    return Math.max(this.MIN_BOX_WIDTH, Math.min(this.MAX_BOX_WIDTH, boxWidth));
+  }
+
   createBox(title: string): string {
-    const border = '═'.repeat(this.BOX_WIDTH);
+    const boxWidth = this.getBoxWidth();
+    const border = '═'.repeat(boxWidth);
     const padding = ' '.repeat(2);
     const centeredTitle = padding + title + padding;
     const top = '╔' + border + '╗';
-    const middle = '║' + centeredTitle.padEnd(this.BOX_WIDTH + 2) + '║';
+    const middle = '║' + centeredTitle.padEnd(boxWidth + 2) + '║';
     const bottom = '╚' + border + '╝';
     return '\n' + top + '\n' + middle + '\n' + bottom + '\n';
   }
